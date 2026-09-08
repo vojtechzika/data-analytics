@@ -123,17 +123,25 @@ ceiling(pi) # 4: nearest higher integer
 # 4. VECTORS (a sequence of values)
 # ---------------------------------------------------------
 
-c_name <- c("Albus", "Bellatrix", "Credence", "Dobby", "Ernie", "Fred", "Grindelwald", "Hermione") # name of a character
+c_name <- c("Albus Dumbledoor", "Bellatrix Lestrange", "Credence Barebone", "Dobby", "Ernie Macmillan", "Fred Weasley", "Gellert Grindelwald", "Hermione Granger") # name of a character
+c_blood <- c("Half-blood", "Pure-blood", "Unknown", NA, "Pure-blood", "Pure-blood", "Pure-blood", "Muggle-born") # blood status
 c_skill <- c(99L, 85L, 55L, 65L, 35L, 60L, 90L, 80L) # magic skill of a character
 c_is_hp <- c(TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE) # is it a Harry Potter character?
 c_height <- c(1.78, 1.58, 1.80, 1.06, NA, 1.89, 1.82, 1.65) # height of a character in meters
 
-
-#check the type
+#check the class
 class(c_name)
+class(c_blood)
 class(c_skill)
 class(c_is_hp)
 class(c_height)
+
+#check the type
+typeof(c_name)
+typeof(c_blood)
+typeof(c_skill)
+typeof(c_is_hp)
+typeof(c_height)
 
 # you can compare vector's types and values
 identical(c_skill, c_height) # FALSE, different types
@@ -143,6 +151,10 @@ c_skill == c_height # compares each pair of elements
 c_name[4]      # only fourth element (first element is always 1, not zero as in some other languages)
 c_name[-4]     # everything EXCEPT the fourth element
 c_name[5:8]    # elements 2 through 4
+
+# you can change vector's element value
+c_name[1] # surname is misspelled
+c_name[1] <- "Albus Dumbledore" # lets make it right
 
 #you can find out vector length()
 length(c_name)
@@ -178,6 +190,22 @@ as.numeric(c_height_messy) * m_to_ft # you must first convert the vector to nume
 # rather than crashing — always check for this!
 
 
+## FACTORS — a factor stores categorical values with a fixed set of allowed 
+# "levels" (here, the four labels above, ignoring NA), rather than free text. 
+blood_factor <- factor(c_blood)
+blood_factor
+
+class(blood_factor)      # "factor"
+typeof(blood_factor)     # "integer"
+
+as.integer(blood_factor) # underlying codes — NA stays NA, doesn't become its own level
+levels(blood_factor)     # "Half-blood" "Muggle-born" "Pure-blood" — alphabetical, not input order
+
+blood_factor[8] <- "Mudblood" # if we try to change Hermione's status to "Mudblood" we get a warning -
+                              # no other values than defined labels are not allowed, NA is coerced
+blood_factor[8] <- "Muggle-born" # let's change it back to "Muggle-born", now it works!
+
+
 # ---------------------------------------------------------
 # 5. DATA FRAMES (a set of vectors)
 # ---------------------------------------------------------
@@ -186,6 +214,7 @@ as.numeric(c_height_messy) * m_to_ft # you must first convert the vector to nume
 # (use the df_ prefix to signal it is a data frame, not a common variable)
 df_hp <- data.frame(
   name = c_name,
+  blood = blood_factor,
   skill  = c_skill,
   height = c_height,
   is_hp_character = c_is_hp
@@ -214,6 +243,7 @@ df_hp # prints df into the console (not convenient with a big data sets)
 head(df_hp) # prints first six rows of the df (convenient as a preview)
 View(df_hp) # Open df in "Excel-style" spreadsheet view ... if left open, it reflects all changes to df we make
 summary(df_hp) # See a summary() for all columns. Note that summary() does not show means for logical variables (but mean() does)
+                # and show counts for factors
 
 
 ## Accessing individual values in data frame
@@ -244,8 +274,11 @@ df_hp[4, ] # prints ALL columns for the fourth row
 ## FILTERING VALUES
 
 # logical filtering
-df_hp$name == "Dobby" # returns logical for whether each element of the selected column satisfies the condition of the name being Dobby.
-mean(df_hp$name == "Dobby") # may be used to quickly compute, for instance, the share of characters named Dobby in the dataset
+df_hp$blood == "Pure-blood" # returns logical for whether each element of the selected 
+                            # column satisfies the condition of having a pure blood.
+
+mean(df_hp$blood == "Pure-blood", na.rm = TRUE) # may be used to quickly compute, for instance, the share of 
+                                                # characters with a pure blood (ignoring NAs)
 
 # basic filtering
 df_hp[df_hp$is_hp_character == TRUE, ] # prints all columns for hp characters
@@ -274,18 +307,23 @@ df_hp$house <- c("Gryffindor", "Slytherin", NA, NA, "Hufflepuff", "Gryffindor", 
 # adding rows is a bit trickier
 # first we need to create a data frame with new rows - the data frame MUST have the same structure as the one we want to expand!
 new_rows <- data.frame(
-  name = c("Newt", "Tina"),
-  skill = c(75, 70),
-  height = c(1.78, 1.65),
+  name = c("Tina Goldstein", "Newt Scamander"),
+  blood = c("Unknown", "Pure-blood"),
+  skill = c(70, 75),
+  height = c(1.65, 1.78),
   is_hp_character = c(FALSE, FALSE),
-  house = c("Hufflepuff", NA)
+  house = c(NA, "Hufflepuff")
 )
 
 # then we use rbind() to attach the new rows at the end of df_hp
 df_hp <- rbind(df_hp, new_rows)
 
+# and we want to keep alphabetical order by name
+df_hp <- df_hp[order(df_hp$name), ]
+
 # optionally, you can now delete new_rows
 new_rows <- NULL
+
 
 # ---------------------------------------------------------------------------
 # 7. IF-ELSE STATEMENTS (a way to conditionally decide on an action)
@@ -305,7 +343,7 @@ ifelse(df_hp$skill > 90, "Excellent Wizzard", # if > 90, Excellent, if not, cont
               )
        )
 
-## for more complex ifelse, use cut()
+## for more complex ifelse, use cut() (returns factors)
 cut(
   df_hp$skill,                          # numeric vector to bin
   breaks = c(-Inf, 60, 80, 90, Inf),    # bin boundaries: (-Inf,60], (60,80], (80,90], (90,Inf]
@@ -433,14 +471,14 @@ say_hello <- function(name) {
 }
 
 # for the function to work, you first need to execute the function's code (as any other code in R)
-say_hello("Albus") # call the function with one argument
+say_hello("Albus Dumbledore") # call the function with one argument
 
 # functions can take multiple arguments, and arguments can have default values
 say_hello <- function(name, greeting = "Hello") { # greeting defaults to "Hello" if not supplied
   paste0(greeting, ", ", name, "!")
 }
-say_hello("Albus")                 # uses the default greeting
-say_hello("Albus", "Good morning") # overrides the default
+say_hello("Albus Dumbledore")                 # uses the default greeting
+say_hello("Albus Dumbledore", "Good morning") # overrides the default
 
 # a function's last evaluated line is what it returns (no need for return(), though it works too)
 add_numbers <- function(a, b) {
