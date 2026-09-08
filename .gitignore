@@ -1,8 +1,5 @@
-data/clean/*
-!data/clean/.gitkeep
-
-before-course/*
-!before-course/*.pdf
+course-materials/setup-guide/*
+!course-materials/setup-guide/*.pdf
 
 .DS_Store
 git.txt
