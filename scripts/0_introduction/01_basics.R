@@ -309,7 +309,7 @@ df_hp$house <- c("Gryffindor", "Slytherin", NA, NA, "Hufflepuff", "Gryffindor", 
 new_rows <- data.frame(
   name = c("Tina Goldstein", "Newt Scamander"),
   blood = c("Unknown", "Pure-blood"),
-  skill = c(70, 75),
+  skill = c(70L, 75L),
   height = c(1.65, 1.78),
   is_hp_character = c(FALSE, FALSE),
   house = c(NA, "Hufflepuff")

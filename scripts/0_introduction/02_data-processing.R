@@ -1,319 +1,245 @@
+# ===================================================================
+# LOAD 00_setup.R
+#
+# 00_setup.R lives in the root of scripts folder (relative to Rproj)
+# It contains code / functions / libraries we want to reuse in
+# all scripts we work with so we do not need to repeat the same
+# code again and again.
+# Loading the file like this is as-if the code would be written
+# in the actual script.
+# ===================================================================
+
+source("scripts/00_setup.R")  
+
+
+### In this script, we will process a new dataset height-weight-by-sex.csv
+# in both base R and dplyr.
+
+
 # ============================================================
 # 1. LOAD AND INSPECT THE DATA
 # ============================================================
-# Load data from csv file into a data.frame called df
-df <- read.csv("data/raw/height-weight-by-sex.csv", sep = ",", header = TRUE)
+# Load data from csv file into a data.frame called df_hw
+df_hw <- read.csv(file.path(dir_src, "height-weight-by-sex.csv"), sep = ",", header = TRUE)
 # Also open in Excel!
 
-# --- structural checks: shape, columns, types, and data integrity ---
+### INSPECT THE DATA
 
-# Check dimensions: how many rows and columns did we load?
-dim(df)
-nrow(df)
+## Data structure
+str(df_hw) # in base R, use str()
 
-# Print just the column names (handy for copy-pasting into code)
-colnames(df)
+glimpse(df_hw) # in dplyr, use glimpse()
 
-# Display the Structure of an R Object
-str(df)
+## Missing values and duplicate rows — always check before doing anything else
+# base R
+colSums(is.na(df_hw))     # how many NAs per column
+sum(duplicated(df_hw))    # how many fully duplicated rows
 
-# Apply Any Function over a List or Vector
-sapply(df, class)
-sapply(df, typeof)
+# dplyr
+df_hw %>% summarise(
+                across( # (across() applies the same function to every column)
+                  everything(), ~ sum(is.na(.))
+                  )
+                )
 
-# Missing values and duplicate rows — always check before doing anything else
-colSums(is.na(df))     # how many NAs per column
-sum(duplicated(df))    # how many fully duplicated rows
-
-# --- exploratory: actually look at the values ---
-
-# Print df to the console
-head(df) # only few rows
-df # all of it
-
-# Open df in "Excel-style" spreadsheet view
-# (leave this tab open — it reflects every change we make below)
-View(df)
-
-# See a summary() for all columns
-summary(df)
+df_hw %>% summarise(
+                n_duplicates = sum(
+                    duplicated(df_hw) # duplicated returns list of logical values, TRUE for a duplicate
+                  )
+                )
 
 
-# You can create functions for data.frame inspection
+### VIEW THE RAW DATA
+head(df_hw) # only few rows
+df_hw # all of it
+View(df_hw) # Excel-style table, the opened tab will reflect all changes below
 
-# structure: shape, column names, types, and data integrity
-inspect_structure <- function(df) {
-  print(dim(df))
-  print(colnames(df))
-  str(df) # str() prints internally via cat(), so wrapping in print() would just add a stray NULL
-  print(sapply(df, class))
-  print(sapply(df, typeof))
-  print(colSums(is.na(df)))
-  print(sum(duplicated(df)))
+### EXPLORE THE DATA
+# base R
+summary(df_hw) # summary of all values
+
+# dplyr really doesn't have summary() equivalent, but allows you
+# to easily create your own summaries. This will come handy later,
+# for instance for confidence intervals computation, etc.
+
+df_hw %>% # "perform all following actions on df_hw dataframe"
+  group_by(Gender) %>% # perform all the following actions on df_hw grouped by Gender
+  summarise(
+    mean_height = mean(Height, na.rm = TRUE),
+    sd_height   = sd(Height, na.rm = TRUE),
+    min_height  = min(Height, na.rm = TRUE),
+    max_height  = max(Height, na.rm = TRUE),
+    n          = n() # number of rows
+  )
+
+# ============================================================
+# 2. TRANSFORM DATA
+# ============================================================
+
+### recode Gender into dummy 
+# when creating dummy (or recoding any variable), 
+# ALWAYS CREATE A NEW COLUMN, NEVER RECODE THE ORIGINAL ITSELF
+
+# use simple logical filtering (see 01_basics.R) if you would like the dummy to be LOGICAL
+# PAY ATTENTION: this only works if the Gender variable has EXACTLY TWO LEVELS
+# utilize your knowledge of factors to find out how many levels the variable has first
+levels(factor(df_hw$Gender))
+# also check for missing values, since levels() won't show these
+sum(is.na(df_hw$Gender)) 
+# if only Female and Male (and no missing values you need to handle separately), you can use logical filtering
+df_hw$is_male <- df_hw$Gender == "Male" # TRUE/FALSE dummy, one per row
+# this does the same job as a simple ifelse statement
+df_hw$is_male <- ifelse(df_hw$Gender == "Male", TRUE, FALSE)
+
+# if there are NAs, a single is_male dummy can't safely capture the whole variable — 
+# collapsing everything else into "not Male" would silently misclassify NA as Female, 
+# exactly the trap flagged above instead, explicitly map only Male/Female 
+# using a nested ifelse statement 
+df_hw$is_male <- ifelse(df_hw$Gender == "Male", TRUE,
+                        ifelse(df_hw$Gender == "Female", FALSE, NA)
+                        )
+
+# dplyr offers a more user-friendly solution using case_when
+# which clearly defines how should individual levels be re-coded
+# this is especially effective for variables with many levels
+df_hw <- df_hw %>%
+  mutate( # mutate() creates a new column
+      is_male = case_when( # the new column is_male is defined by case_when() function
+      Gender == "Male"   ~ TRUE, # which recodes Male as TRUE
+      Gender == "Female" ~ FALSE, # Female as FALSE
+      TRUE               ~ NA   # and anything else, including actual NA, becomes NA
+  ))
+
+
+## LOGICAL vs INTEGER DUMMY
+# alternatively you can code dummy also as integers 0L/1L
+# These are mathematically identical for # math/modeling 
+# (TRUE/FALSE IS 1/0 under the hood), but integer writes as
+# literal 0/1 to a CSV/Excel export while logical writes as "TRUE"/"FALSE" text
+# ultimately this is a matter of personal/field preference — e.g. in
+# economics and other social sciences, 0/1 integer coding is the more
+# conventional way to represent a dummy variable.
+# Since I am in econ, I will stick with integers for now
+df_hw$is_male <- ifelse(df_hw$Gender == "Male", 1L, 0L)
+
+
+
+### RECODE IMPERIAL UNITS INTO METRIC (default for science)
+
+## first, let's create functions for conversion of both units
+# these will be MONOTONIC TRANSFORMATION
+
+inches_to_cm <- function(inches){ 
+  cm <- inches * 2.54 # transform input in inches to cm
+  cm <- round(cm, 0) # round the result to 0 decimal places
+  cm <- as.integer(cm) # make it an integer
+  return(cm) 
 }
 
-# values: actually look at the data itself
-inspect_values <- function(df) {
-  print(head(df))
-  print(summary(df))
-  View(df) # View() opens the viewer as a side effect and returns invisible NULL, so no print() needed
+pounds_to_kg <- function(pounds){ 
+  kg <- pounds * 0.453592
+  kg <- round(kg, 1) # round the result to 1 decimal place
+  return(kg) 
 }
 
-inspect_structure(df)
-inspect_values(df)
+## add columns with base R
+df_hw$height_cm <- inches_to_cm(df_hw$Height)
+df_hw$weight_kg <- pounds_to_kg(df_hw$Weight)
+  
+## or with dplyr
+df_hw <- df_hw %>% mutate(
+  height_cm = inches_to_cm(Height),
+  weight_kg = pounds_to_kg(Weight)
+)
 
-
-# ------------------------------------------------------------
-# NOTE: character vs factor
-# ------------------------------------------------------------
-# sapply(df, class) showed Gender as "character" — just plain text,
-# with no notion of categories or order. A "factor" is R's dedicated
-# type for categorical variables: same underlying values, but R also
-# remembers a fixed set of "levels" (the possible categories) and
-# stores each value as an integer code under the hood, with the level
-# labels attached for display.
-#
-# Why it matters:
-# - Many functions (table(), lm(), ggplot2's discrete scales, ...)
-#   treat factors as categorical automatically, but treat character
-#   columns as plain text.
-# - A factor's levels are fixed: assigning a value that isn't an
-#   existing level produces NA with a warning — which catches a typo
-#   a character column would silently accept.
-# - summary() on a factor shows a count per category; on a character
-#   column it just shows length/class/mode.
-#
-# read.csv() in R >= 4.0 reads text columns in as character by
-# default (that's why Gender came in as character here) — convert it
-# explicitly when you want factor behavior:
-
-# see how it behaves when character
-class(df$Gender) 
-levels(df$Gender) 
-
-# now recode and check again
-df$Gender_Factor <- as.factor(df$Gender)
-class(df$Gender_Factor)   # "factor"
-levels(df$Gender_Factor)  # the categories R now knows about
-
-
-### work with data.frame and vectors --- Recap from the introduction
-
-#first column as data.frame
-df["Gender"] # by name
-df[1] # by order
-
-df["Gender_Factor"] # no change when factorized
-
-# first column as vector
-df$Gender
-df[["Gender"]]
-df[[1]]
-
-df$Gender_Factor # when factorized, it tells the levels
-
-# a concrete vector value
-df$Gender[1]
-df$Gender_Factor[1] # when factorized, it tells the levels
-
-# change value of the first entry
-df$Gender[1] <- "Hello" # when character, you can change any value to any value
-df$Gender[1] <- "Male" # Set the value back to the original
-
-df$Gender_Factor[1] <- "Hello" # when factorized, changing to any other value than specified levels will throw a warning and coerces NA
-
-# recode Gender into dummy using nested ifelse statement
-# PRO TIP: when creating dummy (or recoding any variable), ALWAYS CREATE A NEW COLUMN, NEVER RECODE THE ORIGINAL ITSELF
-df$is_male <- ifelse(df$Gender == "Male", TRUE,
-                    ifelse(df$Gender == "Female", FALSE, NA))
-
-typeof(df$is_male) # check the type, should be logical (TRUE/FALSE/NA)
-
-# create new table column that is empty (NA)
-df$new_column_na <- NA
-
-# add data with vector
-df$new_column_vector <- c("A", "B", NA, "C")
-
-# delete a column
-df$new_column_na <- NULL          # delete by name
-df$new_column_vector <- NULL          # delete by name
-
-
-# ============================================================
-# 2. PROBLEM I.: Height and Weight are in inches and pounds
-#    (not metric) — convert to cm and kg
-# ============================================================
-# Conversion factors.
-# Named in two different styles on purpose, to compare conventions:
-multi_in_to_cm <- 2.54    # snake_case (R's default/recommended style)
-multiLbToKg <- 0.453592   # camelCase (shown here only for comparison — pick one style and stay consistent in real code)
-
-# Step 1: convert units, store results as vectors first
-height_in_cm_vector <- df$Height * multi_in_to_cm
-weight_in_kg_vector <- df$Weight * multiLbToKg
-height_in_cm_vector
-weight_in_kg_vector
-
-# Step 2: round to sensible precision
-# (height: whole numbers, weight: one decimal place)
-# NOTE: R's round() uses "round half to even" (banker's rounding), so
-# round(0.5) gives 0, not 1 — don't be surprised if a hand-checked value
-# looks "off" by one right at a .5 boundary.
-height_in_cm_vector <- round(height_in_cm_vector, 0)
-weight_in_kg_vector <- round(weight_in_kg_vector, 1)
-height_in_cm_vector
-weight_in_kg_vector
-
-# Step 3: create two new (empty) columns in df (this step is redundant, in practice you can do Step 4 directly)
-df$height_cm <- NA
-df$weight_kg <- NA
-
-# Step 4: fill those columns with the converted vectors
-df$height_cm <- height_in_cm_vector
-df$weight_kg <- weight_in_kg_vector
-
-# --------------------------------------------------------------
-# Steps 1-4 above are written out explicitly for clarity.
-# In practice, you can do the same conversion in a single line:
-# --------------------------------------------------------------
-df$height_cm <- round(df$Height * multi_in_to_cm, 0)
-df$weight_kg <- round(df$Weight * multiLbToKg, 1)
-
-# we can also re-define height_cm as integer
-df$height_cm <- as.integer(df$height_cm)
-
-# ============================================================
-# 3. CLEAN UP: rename original imperial columns to make
-#    units explicit
-#    Column is called "Gender", but it actually
-#    records sex (male/female) — rename it accordingly
-# ============================================================
-names(df)[names(df) == "Height"] <- "height_in"
-names(df)[names(df) == "Weight"] <- "weight_lb"
-names(df)[names(df) == "Gender"] <- "sex"
-
-# Confirm the renaming worked
-colnames(df)
-summary(df)
-
-# ============================================================
-# 4. SANITY CHECK: confirm the unit conversion didn't distort
-#    the data — it should just rescale each value, not change
-#    its relative position (i.e., the tallest person in inches
-#    is still the tallest person in cm)
-# ============================================================
+# SANITY CHECK: confirm the unit conversion didn't distort
+# the data — it should just rescale each value, not change
+# its relative position (i.e., the tallest person in inches
+# is still the tallest person in cm).
 # Numerically: correlation measures how strongly two variables
-# move together. Since height_cm = height_in * 2.54 (a fixed
+# move together. Since height_cm = height * 2.54 (a fixed
 # multiplier), every point would fall on a perfectly straight
 # line if there were no rounding — so correlation should be 1,
 # or very close to it, since we rounded height_cm and weight_kg
 # earlier (rounding introduces tiny deviations from the exact
-# straight line).
-# If it's noticeably less than ~0.999, something went wrong in
-# the conversion (e.g. rows got reordered, or the wrong columns
-# were compared).
-cor(df$height_in, df$height_cm)
-cor(df$weight_lb, df$weight_kg)
+# straight line). If it's noticeably less than ~0.999, something 
+# went wrong in the conversion (e.g. rows got reordered, or 
+# the wrong columns were compared).
+
+# base R
+cor(df_hw$Height, df_hw$height_cm) # the correlation is 0.9995647
+cor(df_hw$Weight, df_hw$weight_kg) # the correlation is 0.999998
+
+# dplyr
+correlation_check <- df_hw %>% summarise(
+  cor_height = cor(Height, height_cm),
+  cor_weight = cor(Weight, weight_kg)
+)
+correlation_check 
 
 # ============================================================
-# 5. EXERCISE: Create BMI Column
+# 3. CREATE INDICES 
+# (variables that are a combination of other variables)
 # ============================================================
-# BMI = WEIGHT (in kg) / [height (in meters)]^2
-df$bmi <- NA
+
+# ====
+# EXERCISE: Create a new column BMI and fill it with body-mass 
+# index computed as (WEIGHT in kg) / (height in meters)^2
+# use a function, round to 1 decimal place
+
+compute_bmi <- function(kg, cm){
+  m <- cm/100
+  bmi <- kg/m^2
+  bmi <- round(bmi, 1)
+  return(bmi)
+}
+
+df_hw$bmi <- compute_bmi(df_hw$weight_kg, df_hw$height_cm) # base R
+df_hw <- df_hw %>% mutate(bmi = compute_bmi(weight_kg, height_cm)) # dplyr
 
 # Once you've filled in the formula above, sanity-check it the same
-# way we checked the unit conversion in step 4 — adult BMI typically
-# falls somewhere around 15-40, so summary() and a quick histogram
-# are enough to catch an inverted formula (kg/m^2 vs m^2/kg) or a
-# units mistake (forgetting height_cm is still in cm, not m):
-summary(df$bmi)
+# way we checked the unit conversion above — adult BMI typically
+# falls somewhere around 15-40, so summary() is enough to catch an 
+# inverted formula (kg/m^2 vs m^2/kg) or a units mistake 
+# (forgetting height_cm is still in cm, not m):
+summary(df_hw$bmi)
+
 
 # ============================================================
-# 6. SELECT COLUMNS AND SAVE THE CLEANED DATA
+# 4. PREPARE NEW DATAFRAME FOR EXPORT
+# We only want to export is_male, height_cm, weight_kg, bmi
+# and rename columns to is_male, height, weight, bmi
 # ============================================================
-df_export <- df[, c("is_male", "height_cm", "weight_kg", "bmi")]
-names(df_export)[names(df_export) == "height_cm"] <- "height"
-names(df_export)[names(df_export) == "weight_kg"] <- "weight"
-str(df_export)
 
-write.csv(df_export, "data/clean/height-weight-by-sex.csv", row.names = FALSE)
+## Base R
+# select columns into new dataframe
+df_hw_export <- df_hw[c("is_male", "height_cm", "weight_kg", "bmi")] # or use a vector
 
+# and change column names
+names(df_hw_export)[names(df_hw_export) == "height_cm"] <- "height"
+names(df_hw_export)[names(df_hw_export) == "weight_kg"] <- "weight"
 
+## dplyr
 
-# ==================================================================
-# SHOWCASE: the same steps as in 02_data_processing, but with dplyr
-# ==================================================================
-# dplyr (part of the "tidyverse") is a package built around a small
-# set of "verbs" for the most common data-wrangling steps:
-#   mutate()   - add or change columns
-#   select()   - pick columns
-#   filter()   - pick rows
-#   rename()   - rename columns
-#   summarise()- collapse to summary statistics
-#   arrange()  - sort rows
-# Steps are usually chained with the pipe operator %>% (or base R's
-# own |>), so a sequence of transformations reads top-to-bottom
-# instead of as nested function calls.
-#
-# This section is a SHOWCASE only: it re-reads the raw csv into a
-# separate object (df_dplyr) so it doesn't disturb df or df_export
-# above, and nothing here gets written back to disk.
-
-# install.packages("dplyr")  # only needed once
-library(dplyr)
-
-df_dplyr <- read.csv("data/raw/height-weight-by-sex.csv", sep = ",", header = TRUE)
-
-# --- inspection ---
-# glimpse() is dplyr's version of str(): one line per column, with
-# its type and a preview of the values
-glimpse(df_dplyr)
-
-# NA count per column and duplicate-row count, dplyr style
-# (across() applies the same function to every column)
-df_dplyr %>% summarise(across(everything(), ~ sum(is.na(.))))
-df_dplyr %>% summarise(n_duplicates = sum(duplicated(df_dplyr)))
-# dim() and nrow() don't need a dplyr version — plain base R already
-# does the job in one line
-
-# --- recode Gender into a dummy, convert units, and rename ---
-# mutate() adds new columns (same "always create a new column" rule
-# as in base R); case_when() is dplyr's more readable alternative to
-# nested ifelse()
-multi_in_to_cm <- 2.54    
-multiLbToKg <- 0.453592   
-
-df_dplyr <- df_dplyr %>%
-  mutate(
-    is_male = case_when(
-      Gender == "Male"   ~ TRUE,
-      Gender == "Female" ~ FALSE,
-      TRUE ~ NA
-    ),
-    Gender_Factor = as.factor(Gender),
-    height_cm = round(Height * multi_in_to_cm, 0),
-    weight_kg = round(Weight * multiLbToKg, 1)
-  ) %>%
-  rename(
-    height_in = Height,
-    weight_lb = Weight,
-    sex       = Gender
+df_hw_export <- df_hw %>% 
+  select(is_male, height_cm, weight_kg, bmi) %>% # select columns by names, no quotes needed
+  rename( # rename columns in the same go
+    height = height_cm,
+    weight = weight_kg
   )
 
-glimpse(df_dplyr)
+# check the new data frame
+summary(df_hw_export)
 
-# --- sanity check: same correlation check as section 4 ---
-df_dplyr %>% summarise(
-  cor_height = cor(height_in, height_cm),
-  cor_weight = cor(weight_lb, weight_kg)
-)
 
-# --- EXERCISE: Create BMI Column, dplyr style ---
-# BMI = weight (kg) / [height (m)]^2 — same placeholder as section 5,
-# left for you to fill in
-df_dplyr <- df_dplyr %>% mutate(bmi = NA)
+# ============================================================
+# 5. EXPORT DATA
+# ============================================================
 
-# --- preview the columns we'd export (showcase only — no write.csv here) ---
-df_dplyr %>% select(is_male, height_cm, weight_kg, bmi)
+## write the curated data frame to a new csv into output/data
+write.csv(df_hw_export, file.path(dir_dat, "height-weight-bmi.csv"), row.names = FALSE)
+# row.names = FALSE makes sure we do not add a column with row numbers
+
+## we can also save our dplyr correlation_check as a diagnostics file into data/diagnostics
+write.csv(correlation_check, file.path(dir_dia, "imperial-metric-cor.csv"), row.names = FALSE)
 
