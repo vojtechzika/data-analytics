@@ -247,27 +247,50 @@ summary(df_hp) # See a summary() for all columns. Note that summary() does not s
 
 
 ## Accessing individual values in data frame
+# ====
+# in general, any column (or row) can be accessed either by NUMBER
+# (its position) or by NAME. In practice, prefer NAME — column order
+# can silently change (e.g. if you add, remove, or reorder columns
+# earlier in the script), which breaks anything indexed by position
+# without any warning. Below, every technique is shown BOTH ways:
+# prefer the name-based version every time.
+# ====
 
 # to access any column as a new data frame, use []
-df_hp[1] # creates data frame containing only the first column of df_hp
-df_hp["name"] # or you can call any column by its name
-df_hp[-3] # creates data frame containing all but the third column of df_hp
-df_hp[1:3] # creates data frame containing columns 1 to 3 of df_hp
-df_hp[-1:-3] # creates data frame NOT containing columns 1 to 3 of df_hp
+df_hp["name"]                          # by name — PREFERRED: robust to column reordering
+df_hp[1]                               # by position — fragile: breaks if columns get reordered
+df_hp[c("name", "blood", "skill")]     # multiple columns, by name — PREFERRED
+df_hp[1:3]                             # multiple columns, by position — fragile
+df_hp[-1:-3]                           # exclude columns 1 to 3, by position (no simple name-based equivalent)
 
 # to access any column as a vector, use [[]]
-df_hp[[1]] # prints first column as a vector
-df_hp[["name"]] # you can do the same by column's name
-df_hp$name # or using $ operator: MOST CONVENIENT!
+df_hp[["name"]]                        # by name
+df_hp$name                             # by name, via $ operator: MOST CONVENIENT!
+df_hp[[1]]                             # by position — fragile
+# WATCH OUT: $ does PARTIAL matching by default — df_hp$na would silently
+# return the "name" column (assuming no other column starts with "na"),
+# rather than erroring. A typo can quietly return the wrong data instead
+# of failing loudly — [[ ]] and [ ] require an exact name match, so they're
+# safer if you want a typo to error rather than silently "succeed"
+df_hp$na                               # partial match — silently returns "name"!
 
 # to access a specific value of a data frame, use [row, column]
-df_hp[4, "name"] # prints fourth row of the column "name"
-df_hp[4, 1] # prints fourth row of the first column
-df_hp$name[4] # or using $ operator in combination with []: MOST CONVENIENT!
+df_hp[4, "name"]                       # by column name
+df_hp$name[4]                          # by column name, via $ operator in combination with []: MOST CONVENIENT!
+df_hp[4, 1]                            # by column position — fragile
 
 # you can leave one number out in df[row, column] like so:
-df_hp[, 1] # prints ALL rows for the first column
-df_hp[4, ] # prints ALL columns for the fourth row
+# NOTE: this [row, column] comma form behaves differently from the
+# earlier df_hp["name"] (no comma) — selecting a SINGLE column this way
+# automatically "drops" it to a plain vector, same as df_hp[["name"]] or
+# df_hp$name, NOT a one-column data frame. Add drop = FALSE if you want
+# to keep it as a data frame
+df_hp[, "name"]                        # ALL rows, one column by name — returns a VECTOR (drops)
+df_hp[, "name", drop = FALSE]          # ALL rows, one column by name — returns a DATA FRAME (does not drop)
+df_hp[, c("name", "skill")]            # ALL rows, several columns by name — stays a data frame (2+ columns never drop)
+df_hp[, 1]                             # ALL rows, one column by position — fragile, and also drops to a vector
+df_hp[4, ]                             # ALL columns, fourth row (rows aren't named here, so this stays position-based)
+df_hp[1:3, ]                           # ALL columns, multiple rows — same idea as multiple columns above, just transposed
 # this is useful for filtering, see below!
 
 

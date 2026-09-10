@@ -1,34 +1,60 @@
+# ====
+# LOAD DEPENDENCIES
+source("scripts/00_setup.R")  
+
+
+
 # ============================================================
-# 1. LOAD THE CLEANED DATA
+# 1. LOAD NAD CHECK THE CLEANED DATA
 # ============================================================
 # This is the file we exported at the end of the cleaning script —
-# it already has is_male, height (cm), weight (kg), and a bmi column
-# (still all NA — it was left as an exercise there).
-df <- read.csv("data/clean/height-weight-by-sex.csv", header = TRUE)
+# it already has sex (Male/Female), height (cm), weight (kg), 
+# and a bmi column
+df_nd <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header = TRUE)
 
-str(df)
-head(df)
+str(df_nd) # base R
+glimpse(df_nd) # dplyr
 
-# Recompute bmi here so this script runs on its own, regardless of
-# whether you've filled in the exercise upstream yet (if you have,
-# this just recalculates the same values):
-# BMI = weight (kg) / [height (m)]^2
-df$bmi <- df$weight / (df$height / 100)^2
+summary(df_nd) # quick look at values
 
 # ============================================================
 # 2. EXPLORE CATEGORICAL VARIABLES
 # ============================================================
-# table() counts how many observations fall into each category.
-# is_male is our only categorical (here: binary) variable.
-table(df$is_male)
 
-# always check with useNA = "ifany" too — table() drops NAs by
-# default, so a variable with missing values can silently look
-# "complete" if you only look at the plain table()
-table(df$is_male, useNA = "ifany")
+## 2a. convert sex to a factor
+# sex is currently character — factorizing it now means every table(),
+# summary(), group_by(), and later ggplot() call downstream in this
+# script can just use df_nd$sex directly, with readable labels
+df_nd$sex <- as.factor(df_nd$sex)
 
-# proportions instead of raw counts
-prop.table(table(df$is_male))
+## 2b. verify the conversion worked as expected
+levels(df_nd$sex)              # should be "Female" "Male" - if NULL, something's wrong
+length(levels(df_nd$sex))      # should be 2 — if 0, something's wrong
+
+## 2c. count observations per category — two ways, compare their NA behavior
+# table(): simple, but silently DROPS NA by default
+table(df_nd$sex)
+table(df_nd$sex, useNA = "ifany") # always check this version too
+
+# summary(): SAFER default — automatically shows an NA count if any exist
+# BUT this only works because sex is now a FACTOR (see 2a). summary() on
+# a plain character vector doesn't count categories at all — it just
+# reports length/class/mode, since summary() behaves differently
+# depending on the column's type
+summary(df_nd$sex)                 # counts per category (+ NA's, if any)
+summary(as.character(df_nd$sex))   # compare: length/class/mode — NOT counts
+
+## 2d. proportions instead of raw counts
+prop.table(table(df_nd$sex))
+prop.table(summary(df_nd$sex)) # prop.table() works the same on either
+
+## 2e. dplyr: counts and shares in one pipeline
+df_nd %>%
+  group_by(sex) %>%
+  summarise(n = n()) %>%
+  mutate(share = n / sum(n))
+
+
 
 # ============================================================
 # 3. EXPLORE CONTINUOUS VARIABLES

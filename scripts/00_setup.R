@@ -32,6 +32,7 @@ load_packages <- function(packages) {
 load_packages(
   c(
     "dplyr", 
+    "Hmisc",
     "ggplot2"
 ))
 
