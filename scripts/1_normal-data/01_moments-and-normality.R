@@ -17,54 +17,18 @@ glimpse(df_nd) # dplyr
 
 summary(df_nd) # quick look at values
 
-# ============================================================
-# 2. EXPLORE CATEGORICAL VARIABLES
-# ============================================================
-
-## 2a. convert sex to a factor
-# sex is currently character — factorizing it now means every table(),
-# summary(), group_by(), and later ggplot() call downstream in this
-# script can just use df_nd$sex directly, with readable labels
-df_nd$sex <- as.factor(df_nd$sex)
-
-## 2b. verify the conversion worked as expected
-levels(df_nd$sex)              # should be "Female" "Male" - if NULL, something's wrong
-length(levels(df_nd$sex))      # should be 2 — if 0, something's wrong
-
-## 2c. count observations per category — two ways, compare their NA behavior
-# table(): simple, but silently DROPS NA by default
-table(df_nd$sex)
-table(df_nd$sex, useNA = "ifany") # always check this version too
-
-# summary(): SAFER default — automatically shows an NA count if any exist
-# BUT this only works because sex is now a FACTOR (see 2a). summary() on
-# a plain character vector doesn't count categories at all — it just
-# reports length/class/mode, since summary() behaves differently
-# depending on the column's type
-summary(df_nd$sex)                 # counts per category (+ NA's, if any)
-summary(as.character(df_nd$sex))   # compare: length/class/mode — NOT counts
-
-## 2d. proportions instead of raw counts
-prop.table(table(df_nd$sex))
-prop.table(summary(df_nd$sex)) # prop.table() works the same on either
-
-## 2e. dplyr: counts and shares in one pipeline
-df_nd %>%
-  group_by(sex) %>%
-  summarise(n = n()) %>%
-  mutate(share = n / sum(n))
 
 
 
-# ============================================================
-# 3. EXPLORE CONTINUOUS VARIABLES
-# ============================================================
 
-# --- a. histogram for a single column ---
-hist(df$height,
-     main = "Distribution of height",
-     xlab = "height (cm)",
-     col = "skyblue")
+t.test(df_nd$height ~ df_nd$sex)
+
+
+
+
+
+
+
 # Look closely: it isn't one clean bell curve — there's a subtle second
 # bump. That's because "height" is really two different populations
 # mixed together: males and females each have their own (roughly
@@ -75,9 +39,9 @@ hist(df$height,
 # Split the same variable by sex and the two bell curves become obvious:
 # we use ggplot: - an R workhorse for visualizations
 library(ggplot2)
-ggplot(df, aes(x = height, fill = factor(is_male))) +
+ggplot(df_nd, aes(x = height, fill = sex)) +
   geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
-  labs(x = "height (cm)", fill = "is_male",
+  labs(x = "Height", fill = "Sex",
        title = "Height, split by sex — two overlapping bell curves") +
   theme_minimal()
 # PRO TIP: whenever a variable looks bimodal, ask "is there a grouping
@@ -102,13 +66,13 @@ hist(df) #default call, but!
 Hmisc::hist.data.frame(df[, c("height", "weight", "bmi")])
 
 # --- c. boxplot (base R) ---
-boxplot(df$height,
+boxplot(df_nd$height,
         main = "Boxplot of height",
         ylab = "height (cm)")
 
 # grouped boxplot: height by is_male, so you compare distributions
 # side by side instead of looking at one variable in isolation
-boxplot(height ~ is_male, data = df,
+boxplot(height ~ sex, data = df_nd,
         main = "Height by is_male",
         xlab = "is_male", ylab = "height (cm)")
 

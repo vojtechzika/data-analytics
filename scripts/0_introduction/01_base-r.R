@@ -563,11 +563,11 @@ library(writexl)              # run this every session, before using write_xlsx(
 # ---------------------------------------------------------------------------
 
 ## save as .csv — the default choice: base R, no library needed, opens anywhere (Excel, Python, Google Sheets, ...)
-write.csv(df_hp, "harry_potter.csv", row.names = FALSE) # row.names = FALSE skips adding an extra "row number" column
+write.csv(df_hp, "harry-potter.csv", row.names = FALSE) # row.names = FALSE skips adding an extra "row number" column
 
 ## or save as .xlsx — needs the writexl library installed/loaded in section 10,
 ## but keeps Excel-specific formatting and is nicer to open directly in Excel
-write_xlsx(df_hp, "harry_potter.xlsx")
+write_xlsx(df_hp, "harry-potter.xlsx")
 
 ## WHERE did that file actually go? it gets saved in your WORKING DIRECTORY
 getwd() # prints the path to it
@@ -577,7 +577,7 @@ getwd() # prints the path to it
 # set to the folder containing that .Rproj file. ALWAYS DO THAT — consistent, reproducible!
 
 ## you COULD save using an absolute path instead...
-write.csv(df_hp, "/Users/vojtechzika/Courses/data-analytics/output/data/harry_potter.csv", row.names = FALSE)
+write.csv(df_hp, "/Users/vojtechzika/Courses/data-analytics/output/data/harry-potter.csv", row.names = FALSE)
 # ...but this is NOT RECOMMENDED: it only works on MY computer, since nobody
 # else has a folder at exactly that path — the opposite of reproducible
 
@@ -585,7 +585,7 @@ write.csv(df_hp, "/Users/vojtechzika/Courses/data-analytics/output/data/harry_po
 ## folder, graphs into a figures folder, tables into a tables folder, etc. —
 ## and build the path with file.path(), whose first argument is a relative
 ## path from your working directory and second is the file name
-write.csv(df_hp, file.path("output/data", "harry_potter.csv"), row.names = FALSE)
+write.csv(df_hp, file.path("output/data", "harry-potter.csv"), row.names = FALSE)
 
 ## because programmers are lazy, we automate what we can:
 # save the path to a variable...
@@ -601,9 +601,9 @@ if (!dir.exists(dir_dat)) {
 # source("../00_setup.R")  "../" goes up one folder, e.g. from 0_introduction/ to scripts/, where 00_setup.R lives
 
 # save the file...
-write.csv(df_hp, file.path(dir_dat, "harry_potter.csv"), row.names = FALSE)
+write.csv(df_hp, file.path(dir_dat, "harry-potter.csv"), row.names = FALSE)
 # ...and print a success message to the console
-cat("Saved:", file.path(dir_dat, "harry_potter.csv"), "\n")
+cat("Saved:", file.path(dir_dat, "harry-potter.csv"), "\n")
 
 ###
 # EXERCISE: write a function that handles csv saving automatically
