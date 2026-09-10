@@ -30,6 +30,10 @@ str(df_hw) # in base R, use str()
 
 glimpse(df_hw) # in dplyr, use glimpse()
 
+# The file contains 3 rows (Gender, Height, Weight) and 
+# 10,000 rows (i.e., we have G, H, and W for 10k people)
+
+
 ## Missing values and duplicate rows — always check before doing anything else
 # base R
 colSums(is.na(df_hw))     # how many NAs per column
@@ -205,27 +209,32 @@ df_hw <- df_hw %>% mutate(bmi = compute_bmi(weight_kg, height_cm)) # dplyr
 summary(df_hw$bmi)
 
 
-# ============================================================
+# ==================================================================
 # 4. PREPARE NEW DATAFRAME FOR EXPORT
-# We only want to export is_male, height_cm, weight_kg, bmi
-# and rename columns to is_male, height, weight, bmi
-# ============================================================
+# We only want to export Gender, height_cm, weight_kg, bmi
+# and rename columns to sex, height, weight, bmi
+# (Gender column does not really contain gender (man, woman, etc.), 
+# but sex (male and female).)
+# ==================================================================
 
 ## Base R
 # select columns into new dataframe
-df_hw_export <- df_hw[c("is_male", "height_cm", "weight_kg", "bmi")] # or use a vector
+df_hw_export <- df_hw[c("Gender", "height_cm", "weight_kg", "bmi")] # or use a vector
 
 # and change column names
 names(df_hw_export)[names(df_hw_export) == "height_cm"] <- "height"
 names(df_hw_export)[names(df_hw_export) == "weight_kg"] <- "weight"
+names(df_hw_export)[names(df_hw_export) == "Gender"] <- "sex" # Gender column does not really contain gender (man, woman, etc.), 
+                                                              # but sex (male and female).
 
 ## dplyr
 
 df_hw_export <- df_hw %>% 
-  select(is_male, height_cm, weight_kg, bmi) %>% # select columns by names, no quotes needed
+  select(Gender, height_cm, weight_kg, bmi) %>% # select columns by names, no quotes needed
   rename( # rename columns in the same go
     height = height_cm,
-    weight = weight_kg
+    weight = weight_kg,
+    sex = Gender 
   )
 
 # check the new data frame
