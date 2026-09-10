@@ -99,3 +99,6 @@ hist(df_nd)
 # EXERCISE: Interpret the histograms
 # ====
 
+
+### GGPLOT + DPLYR
+

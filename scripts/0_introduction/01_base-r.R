@@ -123,11 +123,11 @@ ceiling(pi) # 4: nearest higher integer
 # 4. VECTORS (a sequence of values)
 # ---------------------------------------------------------
 
-c_name <- c("Albus Dumbledoor", "Bellatrix Lestrange", "Credence Barebone", "Dobby", "Ernie Macmillan", "Fred Weasley", "Gellert Grindelwald", "Hermione Granger") # name of a character
-c_blood <- c("Half-blood", "Pure-blood", "Unknown", NA, "Pure-blood", "Pure-blood", "Pure-blood", "Muggle-born") # blood status
-c_skill <- c(99L, 85L, 55L, 65L, 35L, 60L, 90L, 80L) # magic skill of a character
-c_is_hp <- c(TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE) # is it a Harry Potter character?
-c_height <- c(1.78, 1.58, 1.80, 1.06, NA, 1.89, 1.82, 1.65) # height of a character in meters
+c_name <- c("Albus Dumbledoor", "Bellatrix Lestrange", "Credence Barebone", "Dobby", "Ernie Macmillan", "Fred Weasley", "Gellert Grindelwald", "Hermione Granger", "Luna Lovegood") # name of a character
+c_blood <- c("Half-blood", "Pure-blood", "Unknown", NA, "Pure-blood", "Pure-blood", "Pure-blood", "Muggle-born", "Pure-blood") # blood status
+c_skill <- c(99L, 85L, 55L, 65L, 35L, 60L, 90L, 80L, 70L) # magic skill of a character
+c_is_hp <- c(TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE) # is it a Harry Potter character?
+c_height <- c(1.78, 1.58, 1.80, 1.06, NA, 1.89, 1.82, 1.65, 1.68) # height of a character in meters
 
 #check the class
 class(c_name)
@@ -325,7 +325,7 @@ df_hp[df_hp$skill <= 65, ] # prints all columns where skill is lower OR equal th
 # adding and deleting columns is straightforward
 df_hp$house <- NA # adds an empty column called "house" filled with NA
 df_hp$house <- NULL # deletes the empty house column 
-df_hp$house <- c("Gryffindor", "Slytherin", NA, NA, "Hufflepuff", "Gryffindor", NA, "Gryffindor") # adds the house column again, this time with values
+df_hp$house <- c("Gryffindor", "Slytherin", NA, NA, "Hufflepuff", "Gryffindor", NA, "Gryffindor", "Ravenclaw") # adds the house column again, this time with values
 
 # adding rows is a bit trickier
 # first we need to create a data frame with new rows - the data frame MUST have the same structure as the one we want to expand!

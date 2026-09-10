@@ -25,6 +25,7 @@ df_hp <- read.csv(file.path(dir_dat, "harry-potter.csv"), sep = ",", header = TR
 
 ggplot(df_hp, aes(x = skill, y = height)) + geom_point()
 ggplot(df_hp, aes(x = skill, y = height)) + geom_smooth()
+
 # ^ same data, same mapping -- only the geom (the "how") changed
 
 # you can also save the base and build on it step by step, since a
@@ -62,7 +63,7 @@ ggplot(df_hp, aes(x = skill, y = height)) +
 # default colors chosen for the color = movie mapping from before
 ggplot(df_hp, aes(x = skill, y = height, color = movie)) +
   geom_point() +
-  scale_color_manual(values = c("Harry Potter" = "darkred",
+  scale_color_manual(values = c("Harry Potter" = "darkred", # R has its own color palette, run colors() to list them or demo("colors") to see them
                                 "Fantastic Beasts" = "darkblue"))
 
 # labs() and theme() are layers too -- they don't touch the data at all,
@@ -72,12 +73,26 @@ ggplot(df_hp, aes(x = skill, y = height, color = movie)) +
   labs(title = "Magic skill vs height", x = "Skill (0-100)", y = "Height (m)") +
   theme_minimal()
 
+# you can also make a pie chart ...
+ggplot(df_hp[!is.na(df_hp$house), ], aes(x = "", fill = house)) +
+  geom_bar(width = 1) +
+  coord_polar("y", start = 0) +
+  scale_fill_manual(values = c("Gryffindor" = "#ae0001", # you can also use HEX codes
+                               "Slytherin" = "#2a623d",
+                               "Hufflepuff" = "#ecb939",
+                               "Ravenclaw" = "#222f5b")) +
+  theme_void() + # theme_void() strips ALL graphics
+  labs(title = "Hogwarts Characters by House") + # lets add title to the figure
+  theme(legend.position = "bottom", legend.title = element_blank()) # put legend below, don't show label
+
+# ... which YOU WILL NEVER EVER USE AGAIN!!!
+
+
 # ====
 # everything above generalizes: ggplot has MANY geoms (histogram, boxplot,
 # violin, bar, line, ...) -- each is just a different "how to draw it"
 # choice sitting on top of the same data + aes() foundation you just saw
 # ====
-
 
 
 ## PUTTING IT ALL TOGETHER
