@@ -32,8 +32,10 @@ load_packages <- function(packages) {
 load_packages(
   c(
     "dplyr", 
-    "Hmisc",
-    "ggplot2"
+    "ggplot2",
+    "tidyr",
+    "Hmisc", # makes hist() work with a data.frame
+    "xtable" # exports data frames to latex format
 ))
 
 

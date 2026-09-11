@@ -1,0 +1,57 @@
+\documentclass{article}
+% declares the document TYPE -- "article" is a simple class with no
+% chapters, good default for short reports/papers (compare: "report",
+% "book", "beamer" for slides)
+
+\usepackage{booktabs}   % nicer table rules -- matches xtable's booktabs output
+
+\title{Data Analytics -- Course Report}   % just STORES the title -- doesn't display it yet
+\author{Vojtěch}                          % same -- stored for \maketitle to use later
+\date{\today}                             % \today auto-inserts the current compile date
+
+\begin{document}
+	% everything ABOVE this line is the "preamble" (settings/packages, no
+	% output); everything BELOW it is what actually gets typeset on the page
+	
+	\maketitle
+	% NOW renders the title/author/date block using the three values
+	% declared above -- this is the command that actually produces output
+	
+	\clearpage
+	% forces a page break -- also flushes any pending floats (tables,
+	% figures) before starting the new page. (compare: \newpage, a plain
+	% page break that does NOT flush floats first)
+	
+	\tableofcontents
+	% auto-generates a table of contents from your \section{}/
+	% \subsection{} commands. GOTCHA: it needs to compile TWICE -- the
+	% first run writes section names to a hidden .toc file, the second
+	% run reads that file to actually build the list. if the TOC looks
+	% empty or out of date after adding/renaming a section, just
+	% recompile again
+	
+	\clearpage
+	% another page break -- keeps the TOC on its own page, separate from
+	% section 1
+	
+	\section{Methods}
+	% starts a new, automatically NUMBERED section with this heading
+	
+	Choosing the right statistical method depends on whether the data
+	supports the normality assumption.
+	% plain body text -- LaTeX treats a blank line as a paragraph break,
+	% not a single newline (a lone line break is ignored)
+	
+	
+	\input{../../output/tables/methods-reference.tex}
+	% pulls in another .tex file and inserts its content HERE, as if it
+	% had been typed directly at this point in the document. no caption
+	% or label is set here -- since there's no \begin{table} wrapper in
+		% THIS file, whatever caption/label xtable produced (or didn't) on
+		% the R side is what you get
+		
+		
+		
+	\end{document}
+	% marks the end of the document -- anything typed after this line is
+	% ignored by LaTeX entirely
