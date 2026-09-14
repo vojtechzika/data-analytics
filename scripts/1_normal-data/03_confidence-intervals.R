@@ -203,3 +203,80 @@ ggplot(bmi_ci, aes(x = sex, y = mean, color = sex)) +
 # ====
 
 
+
+## WHAT DOES "95% CONFIDENCE" ACTUALLY MEAN?
+# and FREQUENTIST stat in general
+# ====
+# it does NOT mean "95% chance the true mean is in this interval" -- the
+# true population mean isn't random, it's a fixed (if unknown) number.
+# what's random is the INTERVAL -- a new sample gives a new interval.
+#
+# once you've drawn your sample and computed actual numbers, say
+# [22.1, 23.4], there's nothing left to be random -- the true mean is
+# either in that range or it isn't, full stop, not "95% true." it's like
+# a coin that's already been flipped and covered by your hand: there's
+# no more "50% chance of heads" -- it already landed. you just don't
+# know which. your UNCERTAINTY doesn't put probability back into
+# something that's already fixed.
+#
+# this is really the core idea behind FREQUENTIST statistics (what
+# we're doing in this whole course): probability only describes
+# something that could vary across repeated trials -- NOT a single,
+# already-realized event. that's why "95% confidence" describes the
+# PROCEDURE, evaluated across many hypothetical repeats, not any one
+# interval you've already computed. let's check that directly, reusing
+# the resampling idea from the Central Limit Theorem script
+# ====
+
+set.seed(1)
+true_mean   <- mean(df_hwb$bmi)   # here we KNOW the true mean, since we're treating the full dataset as the "population"
+
+n_reps      <- 100   # how many "fresh samples" we'll simulate
+sample_size <- 30    # size of each simulated sample
+
+# draw n_reps samples, build a 95% CI for each one -- replicate() collects
+# all the results; since ci_bounds() returns 3 numbers (mean/lower/upper),
+# the result is a matrix, one COLUMN per rep
+ci_reps <- replicate(n_reps, ci_bounds(sample(df_hwb$bmi, size = sample_size, replace = TRUE)))
+
+# transpose so each rep is a ROW instead of a column, then convert to a
+# normal data frame we can work with
+df_coverage <- as.data.frame(t(ci_reps))
+
+df_coverage$rep <- 1:n_reps   # just an index/ID for each simulated sample, for plotting
+
+# does THIS interval happen to contain the true mean? TRUE/FALSE per rep
+df_coverage$contains_true <- df_coverage$lower <= true_mean & df_coverage$upper >= true_mean
+
+mean(df_coverage$contains_true)   # should land close to 0.95
+
+ggplot(df_coverage, aes(x = rep, y = mean, color = contains_true)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper)) +
+  geom_hline(yintercept = true_mean, linetype = "dashed", color = "grey40") +
+  coord_flip() +
+  scale_color_manual(values = c("TRUE" = "#2a78d6", "FALSE" = "#e34948")) +
+  labs(x = "sample #", y = "bmi", color = "contains true mean?",
+       title = "100 resampled 95% CIs -- most contain the true mean, a few don't") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+## COMPARING TO R'S BUILT-IN TOOLS
+# ====
+# in practice, you won't build CIs by hand -- t.test() (among others)
+# does it for you. it's worth seeing that it gives (almost) the same
+# answer as our formula:
+# ====
+
+ci_male     # our hand-built version
+t.test(male_bmi)$conf.int   # R's built-in version
+
+# they're close but not IDENTICAL -- t.test() uses the t-distribution
+# rather than a fixed z = 1.96. the t-distribution has slightly heavier
+# tails, to account for the extra uncertainty of also estimating sd from
+# the sample -- it matters most for SMALL samples, and converges to the
+# normal/z version as n grows (which is exactly why our large-n hand
+# calculation nearly matches it here)
+
+
+
