@@ -125,6 +125,7 @@ boxplot(df_hwb$bmi)
 invisible( sapply(df_hwb[c("height", "weight", "bmi")], boxplot) ) # one by one with sapply
 
 boxplot(df_hwb[c("height", "weight", "bmi")])  # all three at once, base R -- no Hmisc needed
+# bmi shows why this may not be the best view you want to see
 
 #@@ However!!! We know that at least weight differs by sex
 
@@ -133,7 +134,8 @@ boxplot(height ~ sex, data = df_hwb)
 
 # but ggplot is more flexible
 df_hwb %>% ggplot(aes(x = sex, y = weight)) + 
-  geom_boxplot() 
+  geom_boxplot() +
+  theme_calc() # ggthemes theme
 
 
 ### VIOLIN PLOT: DISTIBUTION PLUS SUMMARIES
@@ -203,10 +205,26 @@ ggplot(df_hwb_long, aes(x = sex, y = value)) +
 # ====
 
 
+
 ### NORMALITY CHECK: QQ-PLOTS
-# a QQ-plot compares your data's quantiles against the quantiles a
-# perfectly normal distribution would have -- points hugging the diagonal
-# line means "looks normal"; systematic curves/deviations mean it doesn't
+# ====
+# a QQ-plot ("quantile-quantile") checks normality by comparing your
+# data against what a perfectly normal distribution would look like
+#
+# how it's built: values are first sorted from lowest to highest, so
+# each one gets a rank (1st smallest, 2nd smallest, ..., largest). Each
+# ranked value is then plotted against the value we'd EXPECT at that
+# exact rank if the data were perfectly normal
+#
+# x-axis = expected value for that rank, under a perfect normal curve
+#          (theoretical -- always centered on 0)
+# y-axis = the actual sorted data value at that rank
+#
+# if the data really is normal, actual values track their expected
+# rank closely, so points fall on the diagonal line (qqline()).
+# systematic deviations -- curving away at the ends, S-shapes, etc. --
+# reveal HOW the data differs from normal (e.g. heavy tails, skew)
+# ====
 
 
 ## 1. HOW IT SHOULD LOOK: simulated NORMAL data

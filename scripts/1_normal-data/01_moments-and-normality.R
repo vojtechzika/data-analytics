@@ -25,6 +25,28 @@ n <- length(sim_normal)
 hist(sim_normal)
 qqnorm(sim_normal); qqline(sim_normal) 
 
+
+# HISTOGRAM WITH A DENSITY CURVE
+# ====
+# a histogram bins the data and counts how many values fall in each bin
+# -- by default the y-axis is just these raw counts
+#
+# a density curve is a SMOOTHED estimate of the underlying distribution
+# shape -- instead of discrete bins, it estimates how likely any given
+# x-value is, and the curve is scaled so the total area underneath = 1
+#
+# because of that "area = 1" rule, density is not on the same scale as
+# raw counts -- that's why we rescale the histogram with
+# aes(y = after_stat(density)) before overlaying the two: it converts
+# counts into the same "area = 1" scale so the curve actually matches
+# the shape of the bars, rather than being invisible at the bottom
+# ====
+ggplot(data.frame(x = sim_normal), aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), fill="gray") +
+  geom_density()
+
+
+
 ## k=1: MEAN
 # ====
 # the reference point everything below is measured AS A DEVIATION FROM
@@ -32,6 +54,12 @@ qqnorm(sim_normal); qqline(sim_normal)
 # ====
 m <- mean(sim_normal)
 m
+
+
+# see for yourself:
+x <- c(2, 4, 6, 8, 10)
+x - mean(x)          # the individual deviations: -4 -2 0 2 4
+mean(x - mean(x))    # their mean: 0 (or something like -1e-16 due to floating point rounding)
 
 
 ## k=2: VARIANCE -- FORMULA VS SHORTCUT

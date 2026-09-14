@@ -32,7 +32,10 @@ ggplot(df_hp, aes(x = skill, y = height)) + geom_smooth()
 # ggplot object is really just an accumulation of layers
 p <- ggplot(df_hp, aes(x = skill, y = height))
 p + geom_point()
-p + geom_point() + geom_smooth()          # layers just stack with +
+p + geom_point() + geom_smooth()         # layers just stack with +
+p + geom_point() + geom_smooth() + xlim(55,100)  # limit x axis to existing values
+  
+
 
 # aes() doesn't have to live in ggplot() -- putting it inside a geom
 # instead maps it for THAT layer only, not the whole plot
@@ -71,7 +74,17 @@ ggplot(df_hp, aes(x = skill, y = height, color = movie)) +
 ggplot(df_hp, aes(x = skill, y = height, color = movie)) +
   geom_point() +
   labs(title = "Magic skill vs height", x = "Skill (0-100)", y = "Height (m)") +
-  theme_minimal()
+  theme_minimal() # ggplot has predefined themes
+
+#====
+# THEMES:
+# ggplot has several in-built themes: https://ggplot2.tidyverse.org/reference/ggtheme.html
+# you can also install additinal themes with ggthemes library: https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/
+#====
+
+
+
+
 
 # you can also make a pie chart ...
 ggplot(df_hp[!is.na(df_hp$house), ], aes(x = "", fill = house)) +
@@ -108,9 +121,9 @@ nice_plot <- ggplot(df_hp, aes(x = skill, y = height, color = movie)) +  # data 
   scale_color_manual(values = c("Harry Potter" = "darkred",
                                 "Fantastic Beasts" = "darkblue")) +      # custom colors instead of ggplot defaults
   labs(title = "Magic Skill vs Height",                                  # custom title
-       subtitle = "Harry Potter vs Fantastic Beasts Characters",         # custom subtitle
-       x = "Skill (0-100)",                                              # x-axis title
-       y = "Height (m)",                                                 # y-axis title
+       subtitle = "Harry Potter vs Fantastic Beasts Characters \n",         # custom subtitle
+       x = "\n Skill (0-100)",                                              # x-axis title
+       y = "Height (m) \n",                                                 # y-axis title
        color = "Movie") +                                                # legend title   
   theme_minimal() +                                                      # cleaner background style
   theme(legend.position = "bottom")                                     # show the legend below the plot rather than on the left (default)

@@ -33,6 +33,7 @@ load_packages(
   c(
     "dplyr", 
     "ggplot2",
+    "ggthemes", # extra themes for ggplot
     "tidyr",
     "Hmisc", # makes hist() work with a data.frame
     "xtable" # exports data frames to latex format

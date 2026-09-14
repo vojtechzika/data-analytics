@@ -1,6 +1,6 @@
 source("scripts/00_setup.R")
 
-df_nd <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header = TRUE)
+df_hwb <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header = TRUE)
 
 ## THE CENTRAL LIMIT THEOREM, DEMONSTRATED ON BMI
 # ====
@@ -11,7 +11,7 @@ df_nd <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header
 # happens to the MEAN of repeated samples drawn from it
 # ====
 
-hist(df_nd$bmi)   # reminder: the individual values are somewhat skewed
+hist(df_hwb$bmi)   # reminder: the individual values are somewhat skewed
 
 
 ## DRAW REPEATED SAMPLES, TRACK THE MEAN EACH TIME
@@ -25,7 +25,7 @@ hist(df_nd$bmi)   # reminder: the individual values are somewhat skewed
 set.seed(1)
 
 draw_sample_means <- function(n, reps = 1000) {
-  replicate(reps, mean(sample(df_nd$bmi, size = n, replace = TRUE)))
+  replicate(reps, mean(sample(df_hwb$bmi, size = n, replace = TRUE)))
 }
 
 means_n5   <- draw_sample_means(n = 5)
@@ -44,7 +44,8 @@ df_means <- data.frame(
 )
 
 ggplot(df_means, aes(x = mean)) +
-  geom_histogram(bins = 40) +
+  geom_histogram() +
+  #geom_density() +
   facet_wrap(~ n, scales = "free")   # watch the shape tighten and symmetrize as n grows
 
 
@@ -73,8 +74,8 @@ shapiro.test(means_n100)
 # answered separately per group:
 # ====
 
-male_bmi   <- df_nd$bmi[df_nd$sex == "Male"]
-female_bmi <- df_nd$bmi[df_nd$sex == "Female"]
+male_bmi   <- df_hwb$bmi[df_hwb$sex == "Male"]
+female_bmi <- df_hwb$bmi[df_hwb$sex == "Female"]
 
 means_male_n30   <- replicate(1000, mean(sample(male_bmi,   size = 30, replace = TRUE)))
 means_female_n30 <- replicate(1000, mean(sample(female_bmi, size = 30, replace = TRUE)))
@@ -92,6 +93,12 @@ hist(means_female_n30)
 # of what a formal normality test on the raw data says -- exactly what
 # happened with bmi and height in 01_moments-and-normality.R.
 #
+# NOTE: you don't need to repeat this resampling exercise every time you
+# have non-normal data -- it was done here ONCE, to prove the mechanism
+# works. in practice, you just check whether your sample size is big
+# enough (rule of thumb: n >~ 30 per group) and proceed straight to the
+# parametric test -- no simulation required
+#
 # the real trigger for needing the different tools you'll see later (in
 # 2_other-data) isn't "failed a normality test" -- it's SAMPLE SIZE.
 # small samples don't have enough observations for CLT to kick in.
@@ -107,5 +114,8 @@ hist(means_female_n30)
 # 2. if you actually care about medians or ranks rather than the mean,
 #    the alternative tools aren't a fallback -- they're the correct
 #    tool for the question, regardless of sample size
+#
+# (mechanically, the resampling trick used above resembles
+# "bootstrapping" -- more on that properly when it's actually useful,
+# in 2_other-data)
 # ====
-
