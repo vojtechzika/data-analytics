@@ -7,7 +7,7 @@
 # if it's not there, we're in the wrong folder (or RStudio wasn't opened
 # via the .Rproj), so stop immediately with a clear error instead of
 # letting later code fail confusingly
-if (!file.exists("data-analytics.Rproj")) {
+if (!file.exists("./data-analytics.Rproj")) {
   stop("Not in the project root — open the project via data-analytics.Rproj, then run this script again.")
 }
 
@@ -56,3 +56,21 @@ for (d in dirs) {                              # ...and loop through it
     cat("Created folder:", d, "\n")
   }
 }
+
+
+## Our function to compute moments for any distribution
+# Usage:
+#   moment(x, 1)   # mean (~0)
+#   moment(x, 2)   # variance
+#   moment(x, 3)   # skewness
+#   moment(x, 4)   # kurtosis -- RAW, not excess: moment(x, 4) - 3 for that
+moment <- function(x, k) {
+       n <- length(x)
+       m <- mean((x - mean(x))^k)
+       if (k == 2) m <- m * n / (n - 1)   # match var()'s (n-1) convention
+       if (k >= 3) m <- m / sd(x)^k       # standardize only from k=3 onward
+       m
+     }
+
+
+

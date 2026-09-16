@@ -1,12 +1,21 @@
+# ===================================================================
+# 06_central-limit-theorem.R — demonstrates why the MEAN of a sample
+# can be treated as normal even when the underlying variable isn't
+# ===================================================================
+
+# ============================================================
+# 1. LOAD DEPENDENCIES AND DATA
+# ============================================================
 source("scripts/00_setup.R")
 
 df_hwb <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header = TRUE)
+
 
 ## THE CENTRAL LIMIT THEOREM, DEMONSTRATED ON BMI
 # ====
 # CLT: no matter how the POPULATION is distributed, the distribution of
 # the SAMPLE MEAN becomes approximately normal as sample size grows.
-# bmi itself is mildly skewed (see 01_moments-and-normality.R) -- let's
+# bmi itself is mildly skewed (see 05_assessing-normality.R) -- let's
 # treat our observed bmi values as a stand-in "population" and watch what
 # happens to the MEAN of repeated samples drawn from it
 # ====
@@ -38,28 +47,31 @@ hist(means_n100)   # close to a clean bell curve
 
 
 ## SAME THING, SIDE BY SIDE
+# ====
+# column named sample_mean, not mean -- naming a column "mean" would
+# shadow the mean() function for anyone who later calls mean(df_means$mean)
+# ====
 df_means <- data.frame(
-  n    = factor(rep(c(5, 30, 100), each = 1000)),
-  mean = c(means_n5, means_n30, means_n100)
+  n           = factor(rep(c(5, 30, 100), each = 1000)),
+  sample_mean = c(means_n5, means_n30, means_n100)
 )
 
-ggplot(df_means, aes(x = mean)) +
+ggplot(df_means, aes(x = sample_mean)) +
   geom_histogram() +
-  #geom_density() +
   facet_wrap(~ n, scales = "free")   # watch the shape tighten and symmetrize as n grows
 
 
 ## FORMAL CHECK: DOES THE SAMPLING DISTRIBUTION ITSELF PASS?
 # ====
-# same diagnostics as 01_moments-and-normality.R -- but applied to the
+# same diagnostics as 05_assessing-normality.R -- but applied to the
 # distribution of MEANS, not the raw bmi values
 # ====
 
 qqnorm(means_n100); qqline(means_n100)
 shapiro.test(means_n100)
-# compare this to bmi's own verdict in 01 -- individual bmi values were
-# rejected as non-normal, but the MEAN of a sample this size is normal
-# enough. this is the CLT rescue in action, not just asserted by name
+# compare this to bmi's own verdict in 05_assessing-normality.R -- individual
+# bmi values were rejected as non-normal, but the MEAN of a sample this size
+# is normal enough. this is the CLT rescue in action, not just asserted by name
 
 
 ## WAIT -- DOES POOLING ACROSS SEX MATTER HERE?
@@ -91,7 +103,7 @@ hist(means_female_n30)
 # if your sample is large enough, CLT means you can almost always use
 # the tools in THIS folder (t-test, ANOVA, ...) on the MEAN, regardless
 # of what a formal normality test on the raw data says -- exactly what
-# happened with bmi and height in 01_moments-and-normality.R.
+# happened with bmi and height in 05_assessing-normality.R.
 #
 # NOTE: you don't need to repeat this resampling exercise every time you
 # have non-normal data -- it was done here ONCE, to prove the mechanism

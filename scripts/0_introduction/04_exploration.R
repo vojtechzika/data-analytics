@@ -1,4 +1,12 @@
 # ====
+# OBJECTIVES
+# 1) learn how to explore categorical variables with table / prop.table (with the use of factors) and dplyr alternatives
+# 2) learn to explore continuous variables with histograms, boxplots, and violin plots
+# 3) learn how to pivot wide table into a long table
+# ====
+
+
+# ====
 # LOAD DEPENDENCIES
 source("scripts/00_setup.R")  
 
@@ -201,88 +209,10 @@ ggplot(df_hwb_long, aes(x = sex, y = value)) +
 # but WHICH test is valid depends on whether your data behaves normally
 # (or your sample is large enough for the Central Limit Theorem (CLT)
 # to rescue it (about that later in the course. that's why, before 
-# running any test, we check normality first. that's what the QQ-plots are doing.
+# running any test, we check normality first. 
 # ====
 
 
-
-### NORMALITY CHECK: QQ-PLOTS
-# ====
-# a QQ-plot ("quantile-quantile") checks normality by comparing your
-# data against what a perfectly normal distribution would look like
-#
-# how it's built: values are first sorted from lowest to highest, so
-# each one gets a rank (1st smallest, 2nd smallest, ..., largest). Each
-# ranked value is then plotted against the value we'd EXPECT at that
-# exact rank if the data were perfectly normal
-#
-# x-axis = expected value for that rank, under a perfect normal curve
-#          (theoretical -- always centered on 0)
-# y-axis = the actual sorted data value at that rank
-#
-# if the data really is normal, actual values track their expected
-# rank closely, so points fall on the diagonal line (qqline()).
-# systematic deviations -- curving away at the ends, S-shapes, etc. --
-# reveal HOW the data differs from normal (e.g. heavy tails, skew)
-# ====
-
-
-## 1. HOW IT SHOULD LOOK: simulated NORMAL data
-set.seed(1) # for replicability
-
-# normal data are defined by its first two moments - 
-# mean and standard deviation, we will get to it
-sim_normal <- rnorm(500, mean = 0, sd = 1) 
-
-hist(sim_normal)
-qqnorm(sim_normal); qqline(sim_normal)     # points hug the line closely -- this is the reference case
-
-
-## 2. HOW IT SHOULD NOT LOOK: simulated LOG-NORMAL data
-# ====
-# common for things like income, prices, reaction times -- this is what a
-# CLEARLY non-normal histogram/QQ-plot looks like, to calibrate your eye
-# before we look at the more ambiguous real data below
-# ====
-set.seed(1)
-sim_lognormal <- rlnorm(500, meanlog = 0, sdlog = 1)
-
-hist(sim_lognormal)                          # strong right skew
-qqnorm(sim_lognormal); qqline(sim_lognormal) # clear upward curve -- deviates from the line
-
-
-## 3. NOW THE REAL DATA
-qqnorm(df_hwb$height); qqline(df_hwb$height)  # curves off -- same mixture issue as the histogram
-qqnorm(df_hwb$weight); qqline(df_hwb$weight)   # same story
-qqnorm(df_hwb$bmi);    qqline(df_hwb$bmi)      # same story
-
-
-## 4. SAME CHECK, BUT WITHIN EACH SEX GROUP
-# ====
-# height/weight/bmi were pooled across sex above -- like the histograms earlier,
-# check whether they look normal WITHIN each sex group instead. same
-# function idea as plot_by_sex() before: .data[[var]] looks up a column
-# by name, and facet_wrap() reuses the layering system from the primer
-# ====
-
-qq_by_sex <- function(var) {
-  ggplot(df_hwb, aes(sample = .data[[var]])) +
-    stat_qq() + stat_qq_line() +
-    facet_wrap(~ sex)
-}
-
-qq_by_sex("height")
-qq_by_sex("weight")
-qq_by_sex("bmi")
-
-
-# ====
-# pooled height, weight and bmi looked off (both the histograms and the
-# QQ-plots showed the sex-mixture pattern) -- but split by sex, all
-# three variables look reasonably normal. so we continue to
-# 1_normal-data, where we check normality quantitatively, not only
-# visually, on each sex group
-# ====
 
 
 

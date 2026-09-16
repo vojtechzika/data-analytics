@@ -1,4 +1,13 @@
+# ===================================================================
+# 07_what-next-latex.R — a conceptual bridge into the next two course
+# folders, plus a first look at exporting tables to LaTeX
+# ===================================================================
+
+# ============================================================
+# 1. LOAD DEPENDENCIES
+# ============================================================
 source("scripts/00_setup.R")
+
 
 ## WHAT NEXT?
 # ====
@@ -7,11 +16,13 @@ source("scripts/00_setup.R")
 # question with a real answer, not just description.
 #
 # but answering that requires picking the RIGHT statistical method, and
-# which method is "right" depends on how the data is distributed. 
+# which method is "right" depends on how the data is distributed.
 # ====
 
 
-## MEAN VS MEDIAN
+# ============================================================
+# 2. MEAN VS MEDIAN
+# ============================================================
 # ====
 # most methods you'll learn work by comparing either the MEAN or the
 # MEDIAN of your data across groups.
@@ -20,8 +31,8 @@ source("scripts/00_setup.R")
 # extreme outliers (one huge value can drag it a long way), and it also
 # means the math behind confidence intervals and p-values for the mean
 # only works cleanly if the data (or, for large samples, the mean's own
-# sampling distribution -- more on this soon) behaves like a normal
-# distribution.
+# sampling distribution -- see 06_central-limit-theorem.R) behaves like
+# a normal distribution.
 #
 # the MEDIAN (and rank-based methods generally) only cares about the
 # ORDER of your values, not their exact numeric distance from each
@@ -30,7 +41,9 @@ source("scripts/00_setup.R")
 # ====
 
 
-## THE LINGO
+# ============================================================
+# 3. THE LINGO
+# ============================================================
 # ====
 # this course calls the two upcoming folders "normal-data" and
 # "other-data" -- but the standard statistical terms for this exact
@@ -48,7 +61,9 @@ source("scripts/00_setup.R")
 # ====
 
 
-## A ROADMAP
+# ============================================================
+# 4. A ROADMAP
+# ============================================================
 # ====
 # same question, two tools -- which one you reach for depends on
 # whether your data (or your sample size) lets you assume normality.
@@ -67,7 +82,9 @@ methods_reference <- data.frame(
 methods_reference
 
 
-## EXPORTING FOR LATEX
+# ============================================================
+# 5. EXPORTING FOR LATEX
+# ============================================================
 # ====
 # this script has been mostly conceptual, so it's a good moment to
 # introduce something you'll use throughout the course: exporting a
@@ -83,5 +100,6 @@ print(methods_table,
       file = file.path(dir_tab, "methods-reference.tex"),
       include.rownames = FALSE,
       size = "footnotesize",
-      booktabs = TRUE)   # matches \usepackage{booktabs} in the LaTeX template below
-
+      booktabs = TRUE)   # booktabs = TRUE uses \toprule / \midrule / \bottomrule instead
+                         # of plain \hline -- needs \usepackage{booktabs} in whatever
+                         # .tex document \input{}s this table

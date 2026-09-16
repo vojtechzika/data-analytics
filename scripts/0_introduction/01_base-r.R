@@ -496,12 +496,19 @@ say_hello <- function(name) {
 # for the function to work, you first need to execute the function's code (as any other code in R)
 say_hello("Albus Dumbledore") # call the function with one argument
 
+
+# if your function is really simple (as ours is now), you can use
+# this one line shorthand without the curly brackets { }
+say_hello_oneliner <- function(name) paste0("Hello, ", name, "!")
+say_hello_oneliner("Albus Dumbledore")
+
+
 # functions can take multiple arguments, and arguments can have default values
-say_hello <- function(name, greeting = "Hello") { # greeting defaults to "Hello" if not supplied
+say_hello_greeting <- function(name, greeting = "Hello") { # greeting defaults to "Hello" if not supplied
   paste0(greeting, ", ", name, "!")
 }
-say_hello("Albus Dumbledore")                 # uses the default greeting
-say_hello("Albus Dumbledore", "Good morning") # overrides the default
+say_hello_greeting("Albus Dumbledore")                 # uses the default greeting
+say_hello_greeting("Albus Dumbledore", "Good morning") # overrides the default
 
 # a function's last evaluated line is what it returns (no need for return(), though it works too)
 add_numbers <- function(a, b) {
