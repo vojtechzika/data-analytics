@@ -1,1 +1,2 @@
-\contentsline {section}{\numberline {1}Methods}{3}{}%
+\contentsline {section}{\numberline {1}Statistics}{3}{}%
+\contentsline {subsection}{\numberline {1.1}Two-groups Comparison (t-test)}{3}{}%

@@ -609,6 +609,10 @@ if (!dir.exists(dir_dat)) {
 
 # save the file...
 write.csv(df_hp, file.path(dir_dat, "harry-potter.csv"), row.names = FALSE)
+
+## ATTENTION: write.csv IS NOT case sensitive - trying to save Harry-Potter.csv 
+# will rewrite the existing file, not create a new one
+
 # ...and print a success message to the console
 cat("Saved:", file.path(dir_dat, "harry-potter.csv"), "\n")
 

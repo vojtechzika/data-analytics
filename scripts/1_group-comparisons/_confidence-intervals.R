@@ -1,8 +1,3 @@
-source("scripts/00_setup.R")
-
-df_hwb <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header = TRUE)
-
-
 ## OBJECTIVES: GOING BEYOND THE MEAN
 # ====
 # based on our exploratory analysis, we suspect there might be a sex
@@ -24,6 +19,11 @@ df_hwb <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", heade
 # ====
 
 
+source("scripts/00_setup.R")
+
+df_hwb <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", header = TRUE)
+
+
 ## Z-SCORES
 # ====
 # a z-score tells you how many standard deviations a value is from the
@@ -31,7 +31,7 @@ df_hwb <- read.csv(file.path(dir_dat, "height-weight-bmi.csv"), sep = ",", heade
 #   z = (x - mean) / sd
 #
 # this is the exact same idea used behind the scenes in the QQ-plot's
-# x-axis earlier (01_moments-and-normality.R) -- there we compared
+# x-axis earlier -- there we compared
 # ranks against EXPECTED z-scores for a normal distribution; here we
 # compute an ACTUAL z-score for a real value
 # ====
@@ -117,8 +117,8 @@ ggplot(df_norm, aes(x, y)) +
 # how far a single VALUE was from the mean, using sd. here, we're
 # measuring how far a sample MEAN could plausibly be from the true
 # population mean -- and sample means don't vary as much as individual
-# values do (02_clt.R showed this directly: means_n30 was a much
-# tighter spread than the raw bmi values).
+# values do (06_central-limit-theorem.R showed this directly: means_n30
+# was a much tighter spread than the raw bmi values).
 #
 # that tighter spread is called the STANDARD ERROR:
 #   se = sd / sqrt(n)
@@ -127,16 +127,70 @@ ggplot(df_norm, aes(x, y)) +
 #
 # a 95% confidence interval is then:
 #   mean +/- z_95 * se
+#
+# THIS SHIFT ALSO CHANGES WHETHER NORMALITY MATTERS. an individual
+# z-score's "usual" reading -- z=2 means roughly the 97.5th percentile,
+# via pnorm() -- genuinely assumes the raw data IS normal; bmi itself
+# isn't (05_assessing-normality.R). but the CI here isn't about a single
+# value's percentile -- it's about the MEAN's sampling distribution, and
+# THAT'S approximately normal for large n regardless of what the raw
+# data looks like (the CLT argument from 06). with thousands of
+# observations, CLT has already kicked in for the mean, even though it
+# hasn't (and doesn't need to) for individual bmi values.
+#
+# this isn't unconditional, though: it depends on n being large enough
+# (rule of thumb from 06: n >~ 30). for small samples of non-normal
+# data, the sampling distribution of the mean might not be normal
+# enough yet, and a z- (or even t-) based CI can be unreliable --
+# exactly the situation the non-parametric methods later in the course
+# (07_what-next-latex.R's roadmap) are built for
 # ====
-
-male_bmi   <- df_hwb$bmi[df_hwb$sex == "Male"]
-female_bmi <- df_hwb$bmi[df_hwb$sex == "Female"]
 
 ci_bounds <- function(x, z = z_95) {
   m  <- mean(x)
   se <- sd(x) / sqrt(length(x))
   c(mean = m, lower = m - z * se, upper = m + z * se)
 }
+
+ci_bounds(df_hwb$bmi)   # the whole sample, one CI -- start with the simplest case
+
+
+## COMPARING TO A FIXED HYPOTHESIS: IS OVERALL BMI'S MEAN 25.5?
+# ====
+# a "point + whisker" plot: the dot is the mean, the whiskers are the
+# 95% CI. here the comparison is against a fixed HYPOTHESIZED value
+# rather than another group -- the simplest version of "does the data
+# rule this value out?"
+# ====
+
+hypothesized_bmi <- 25.5
+
+bmi_ci_overall <- as.data.frame(t(ci_bounds(df_hwb$bmi)))
+bmi_ci_overall
+
+ggplot(bmi_ci_overall, aes(x = "bmi", y = mean)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.05, linewidth = 1, color = "#2a78d6") +
+  geom_point(size = 2, color = "#2a78d6") +
+  geom_hline(yintercept = hypothesized_bmi, linetype = "dashed", color = "#e34948") +
+  labs(x = NULL, y = "bmi", title = "Mean bmi (95% CI) vs. hypothesized value of 25") +
+  theme_minimal()
+
+# if the dashed line (25.5) falls OUTSIDE the whisker (the CI), that's a
+# strong hint the TRUE population mean isn't 25.5. if it falls INSIDE, the
+# data doesn't rule out 25 as a plausible mean -- a useful eyeball
+# check, not yet a formal answer. the same logic scales up to comparing
+# two GROUPS instead of one group against a fixed number, below
+
+
+## FROM ONE GROUP TO TWO: MALE VS FEMALE
+# ====
+# same ci_bounds() function, just applied to each sex separately instead
+# of the whole sample -- the natural next step once you have more than
+# one group to compare
+# ====
+
+male_bmi   <- df_hwb$bmi[df_hwb$sex == "Male"]
+female_bmi <- df_hwb$bmi[df_hwb$sex == "Female"]
 
 ci_male   <- ci_bounds(male_bmi)
 ci_female <- ci_bounds(female_bmi)
@@ -154,7 +208,6 @@ ci_female
 
 bmi_ci <- df_hwb %>%
   group_by(sex) %>%
- # slice_sample(n = 10) %>% 
   summarise(
     mean  = mean(bmi),
     se    = sd(bmi) / sqrt(n()),
@@ -165,10 +218,11 @@ bmi_ci <- df_hwb %>%
 
 bmi_ci
 
+
 ## COMPARING THE TWO GROUPS: POINT ESTIMATE + CI ("X-WING PLOT")
 # ====
-# a "point + whisker" plot: the dot is the mean, the whiskers are the
-# 95% CI 
+# same point + whisker idea as above, now comparing two GROUPS against
+# each other instead of one group against a fixed value
 # ====
 
 ggplot(bmi_ci, aes(x = sex, y = mean, color = sex)) +

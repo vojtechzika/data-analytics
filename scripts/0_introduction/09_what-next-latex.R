@@ -1,5 +1,5 @@
 # ===================================================================
-# 07_what-next-latex.R — a conceptual bridge into the next two course
+# 09_what-next-latex.R — a conceptual bridge into the next two course
 # folders, plus a first look at exporting tables to LaTeX
 # ===================================================================
 

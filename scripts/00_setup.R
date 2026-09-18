@@ -36,7 +36,8 @@ load_packages(
     "ggthemes", # extra themes for ggplot
     "tidyr",
     "Hmisc", # makes hist() work with a data.frame
-    "xtable" # exports data frames to latex format
+    "xtable", # exports data frames to latex format
+    "rstatix" # tidyverse stat tests
 ))
 
 
