@@ -218,12 +218,57 @@ cap_boot_ci                # against: the bootstrapped interval
 
 t.test(cap_eur_vals, mu = hypothesized_cap)
 
-# read the output: "95 percent confidence interval" should closely match
-# ci_bounds(cap_eur_vals) above, and the p-value answers the same
-# question the plot did -- is 3.50 a plausible value for the true mean?
-# p < 0.05 means the data is not consistent with a true mean of 3.50
-# (matches "3.50 falls outside the CI" from the plot); p > 0.05 means
-# the data can't rule 3.50 out
+# ====
+# reading the output:
+
+## T-statistics (t)
+# - t: how many standard errors the sample mean sits away from mu --
+#   t = (sample mean - mu) / standard error, where the standard error
+#   is sd / sqrt(n). the further from 0 (in either
+#   direction), the more the data disagrees with mu = 3.5
+
+standard_error <- sd(cap_eur_vals) / sqrt(length(cap_eur_vals))
+( mean(cap_eur_vals) - hypothesized_cap ) / standard_error
+
+one_sample$statistic
+# matches the manual calculation above -- this is exactly what t.test()
+# computes internally
+
+## DEGREES OF FREEDOM (df)
+# - df: degrees of freedom, n - 1 for a one-sample test -- together
+#   with t, this is what gets converted into the p-value below
+#
+#   before software did this conversion for us, t and df were looked up
+#   by hand in a critical values table: find your df down the side,
+#   your chosen alpha across the top, and read off the critical t at
+#   that intersection. if your computed |t| exceeds it, you find
+#   support for H1 -- the same decision t.test() makes internally, just
+#   via a p-value instead of a table lookup
+#   https://www.scribbr.com/statistics/students-t-table/
+#   https://www.stat.purdue.edu/~lfindsen/stat503/t-Dist.pdf
+
+## ALTERNATIVE HYPOTHESIS
+# - "alternative hypothesis: true mean is not equal to 25.5" -- this
+#   line is just restating the SETUP (what H1 is), not the RESULT. it
+#   always prints, whether or not the test actually found support for
+#   it -- don't read it as a conclusion
+
+## P-VALUE
+# - p-value: the probability of seeing a sample mean this far from 25.5
+#   if the TRUE mean bmi really were 25.5. THIS is where the
+#   actual verdict comes from -- e.g. p = 0.39 here is nowhere near
+#   significant, so we do NOT find support for H1: this data is
+#   perfectly consistent with a true mean bmi of 25.5
+
+## CONFIDENCE INTERVAL
+# - 95 percent confidence interval: the plausible range for the true
+#   mean bmi -- 25.5 falls right inside it here, which lines up with
+#   that high p-value
+
+## SAMPLE ESTIMATES
+# - sample estimates: the actual sample mean bmi
+# ====
+
 
 
 ## THE NON-PARAMETRIC VERSION: ONE-SAMPLE WILCOXON
