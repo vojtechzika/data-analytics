@@ -37,11 +37,6 @@ bootstrap_means <- function(x) {
   set.seed(123)
   replicate(n_boot, mean(sample(x, length(x), replace = TRUE)))
 }
-bootstrap_means <- function(x) {
-  x <- x[!is.na(x)]
-  set.seed(123)
-  replicate(n_boot, mean(sample(x, length(x), replace = TRUE)))
-}
 
 # and the CLT check itself: is that resampled distribution of means normal?
 bootstrap_clt_p <- function(x) {
@@ -185,6 +180,14 @@ wage_eur_by_urban
 
 # ====
 ## STEP 4: CAP_INDEX (same recipe -- but the CLT won't save this one) ###
+cap_index_vals <- df_cap$cap_index[!is.na(df_cap$cap_index)]
+length(cap_index_vals)
+
+hist(cap_index_vals, breaks = 50, main = "cap_index (overall)")
+shapiro.test(cap_index_vals)
+# p < 0.05 -> not normal, shape very log-normalish
+
+# try to save with bootstrapping
 cap_index_boot_means <- bootstrap_means(cap_index_vals)
 hist(cap_index_boot_means, breaks = 50, main = "bootstrapped means of cap_index")
 shapiro.test(cap_index_boot_means)

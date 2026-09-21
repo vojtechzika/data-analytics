@@ -31,9 +31,10 @@ hist(df_hwb$bmi)   # reminder: the individual values are somewhat skewed
 # vector -- here, 1000 sample means for each sample size n
 # ====
 
-set.seed(1)
+
 
 draw_sample_means <- function(n, reps = 1000) {
+  set.seed(7) # set.seed inside the function, to apply it on each run independently
   replicate(reps, mean(sample(df_hwb$bmi, size = n, replace = TRUE)))
 }
 
