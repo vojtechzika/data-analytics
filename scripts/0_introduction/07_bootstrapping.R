@@ -32,6 +32,7 @@ safe_shapiro <- function(x) {
 # bootstrap call, wherever it appears, is independently reproducible --
 # rerun any single line and you'll always get the same answer, instead of
 # it depending on how much other random code ran before it.
+
 bootstrap_means <- function(x) {
   x <- x[!is.na(x)]
   set.seed(123)
@@ -173,8 +174,6 @@ wage_eur_by_urban
 #             NON-PARAMETRIC required for Urban (standalone) and for any
 #             comparison across urban_class
 # ====
-
-
 
 
 

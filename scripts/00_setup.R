@@ -19,26 +19,59 @@ if (!file.exists("./data-analytics.Rproj")) {
 
 ## let's create a function that installs packages ONLY IF they are not yet installed
 # and load them every time.
+#
+# NOTE: "already installed" is not the same as "loads cleanly". A package can
+# be present on disk but broken — e.g. an install got interrupted partway
+# (leaving a stale 00LOCK-<package> folder that blocks any future install of
+# it), a computer got a new R version and the old binary no longer matches it,
+# or antivirus/OneDrive briefly locked a file mid-install. When that happens,
+# requireNamespace() reports the package as present, but library() then
+# throws an error and the whole script stops — even though the package "was
+# already installed". So instead of trusting requireNamespace() alone, we
+# actually try to load the package first, and only (re)install it if that
+# load fails.
 load_packages <- function(packages) {
   for (pkg in packages) {
-    if (!requireNamespace(pkg, quietly = TRUE)) {
-      install.packages(pkg)
+    loaded <- suppressWarnings(
+      tryCatch({
+        library(pkg, character.only = TRUE) # character.only = TRUE tells library() pkg is a variable holding a name, not a literal package name
+        TRUE
+      }, error = function(e) FALSE)
+    )
+    
+    if (!loaded) {
+      # remove a leftover lock folder from a previous interrupted install —
+      # if it's still there, install.packages() fails immediately with
+      # "failed to lock directory ... for modifying"
+      lib_path <- .libPaths()[1]
+      lock_dir <- file.path(lib_path, paste0("00LOCK-", pkg))
+      if (dir.exists(lock_dir)) {
+        unlink(lock_dir, recursive = TRUE)
+        cat("Removed a stale lock folder for", pkg, "and will reinstall it.\n")
+      }
+      
+      cat("Installing", pkg, "...\n")
+      install.packages(pkg, dependencies = TRUE) # dependencies = TRUE also grabs any of its own dependencies that may be missing/broken
+      
+      # try loading again now that it's (re)installed; if this still fails,
+      # stop here with a clear message pointing at the real package,
+      # instead of a confusing downstream error later in the script
+      library(pkg, character.only = TRUE)
     }
-    library(pkg, character.only = TRUE) # character.only = TRUE tells library() pkg is a variable holding a name, not a literal package name
   }
 }
 
 # install and load all packages defined by a vector
 load_packages(
   c(
-    "dplyr", 
+    "dplyr",
     "ggplot2",
     "ggthemes", # extra themes for ggplot
     "tidyr",
     "Hmisc", # makes hist() work with a data.frame
     "xtable", # exports data frames to latex format
     "rstatix" # tidyverse stat tests
-))
+  ))
 
 
 
@@ -66,12 +99,9 @@ for (d in dirs) {                              # ...and loop through it
 #   moment(x, 3)   # skewness
 #   moment(x, 4)   # kurtosis -- RAW, not excess: moment(x, 4) - 3 for that
 moment <- function(x, k) {
-       n <- length(x)
-       m <- mean((x - mean(x))^k)
-       if (k == 2) m <- m * n / (n - 1)   # match var()'s (n-1) convention
-       if (k >= 3) m <- m / sd(x)^k       # standardize only from k=3 onward
-       m
-     }
-
-
-
+  n <- length(x)
+  m <- mean((x - mean(x))^k)
+  if (k == 2) m <- m * n / (n - 1)   # match var()'s (n-1) convention
+  if (k >= 3) m <- m / sd(x)^k       # standardize only from k=3 onward
+  m
+}
