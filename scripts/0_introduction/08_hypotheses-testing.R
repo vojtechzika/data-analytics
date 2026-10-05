@@ -17,10 +17,10 @@
 # a hypothesis is a relationship between our data and the reality.
 # four things can happen:
 #
-# 1. we FIND SUPPORT for H0, and H0 is indeed true    -- correct
+# 1. we FIND SUPPORT for H0, and H0 is indeed true    -- correct                          | ~EVIDENCE OF ABSENCE
 # 2. we FIND SUPPORT for H1, and H1 is indeed true    -- correct (this is POWER)
 # 3. we FIND SUPPORT for H1, but H0 is actually true  -- Type I error (false positive)
-# 4. we FIND SUPPORT for H0, but H1 is actually true  -- Type II error (false negative)
+# 4. we FIND SUPPORT for H0, but H1 is actually true  -- Type II error (false negative)   | ~ABSENCE OF EVIDENCE
 
 ## ATTENTION (!!!!!!!!!!!!!!!!)
 # The possibility of the Type I / II errors means that

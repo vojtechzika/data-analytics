@@ -142,16 +142,16 @@ ci_bounds <- function(x, z = z_95) {
 ci_bounds(cap_eur_vals)   # the whole sample, one CI
 
 
-## COMPARING TO A FIXED HYPOTHESIS: IS THE AVERAGE CAPPUCCINO €3.50?
+## COMPARING TO A FIXED HYPOTHESIS: IS THE AVERAGE CAPPUCCINO €3.90?
 # ====
-# a "point + whisker" plot: the dot is the mean, the whiskers are the
-# 95% CI. suppose someone claims "the average cappuccino in this dataset
-# costs €3.50" -- does our data support or refute that? here the
+# a "point + whisker" plot (or, X-WING): the dot is the mean, the whiskers are 
+# the 95% CI. suppose someone claims "the average cappuccino in this dataset
+# costs €3.90" -- does our data support or refute that? here the
 # comparison is against a fixed HYPOTHESIZED value rather than another
 # group -- the simplest version of "does the data rule this value out?"
 # ====
 
-hypothesized_cap <- 3.50
+hypothesized_cap <- 3.90
 
 cap_ci_overall <- as.data.frame(t(ci_bounds(cap_eur_vals)))
 cap_ci_overall
@@ -160,12 +160,13 @@ ggplot(cap_ci_overall, aes(x = "cap_eur", y = mean)) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.05, linewidth = 1, color = "#2a78d6") +
   geom_point(size = 2, color = "#2a78d6") +
   geom_hline(yintercept = hypothesized_cap, linetype = "dashed", color = "#e34948") +
-  labs(x = NULL, y = "cap_eur", title = "Mean cappuccino price (95% CI) vs. hypothesized €3.50") +
+  labs(x = NULL, y = "cap_eur", title = "Mean cappuccino price (95% CI) vs. hypothesized €3.90") +
+  coord_cartesian(ylim = c(3.8,4)) +
   theme_minimal()
 
-# if the dashed line (3.50) falls OUTSIDE the whisker (the CI), that's a
-# strong hint the TRUE population mean isn't 3.50. if it falls INSIDE, the
-# data doesn't rule out 3.50 as a plausible mean -- and, as the formal
+# if the dashed line (3.90) falls OUTSIDE the whisker (the CI), that's a
+# strong hint the TRUE population mean isn't 3.90. if it falls INSIDE, the
+# data doesn't rule out 3.90 as a plausible mean -- and, as the formal
 # test below will confirm, that's not just a preview of a "real" answer,
 # it already IS one
 
@@ -216,7 +217,9 @@ cap_boot_ci                # against: the bootstrapped interval
 # by-hand interval here
 # ====
 
-t.test(cap_eur_vals, mu = hypothesized_cap)
+# base r
+one_sample <- t.test(cap_eur_vals, mu = hypothesized_cap)
+one_sample
 
 # ====
 # reading the output:
@@ -225,7 +228,7 @@ t.test(cap_eur_vals, mu = hypothesized_cap)
 # - t: how many standard errors the sample mean sits away from mu --
 #   t = (sample mean - mu) / standard error, where the standard error
 #   is sd / sqrt(n). the further from 0 (in either
-#   direction), the more the data disagrees with mu = 3.5
+#   direction), the more the data disagrees with mu = 3.9
 
 standard_error <- sd(cap_eur_vals) / sqrt(length(cap_eur_vals))
 ( mean(cap_eur_vals) - hypothesized_cap ) / standard_error
@@ -248,26 +251,143 @@ one_sample$statistic
 #   https://www.stat.purdue.edu/~lfindsen/stat503/t-Dist.pdf
 
 ## ALTERNATIVE HYPOTHESIS
-# - "alternative hypothesis: true mean is not equal to 25.5" -- this
+# - "alternative hypothesis: true mean is not equal to 3.9" -- this
 #   line is just restating the SETUP (what H1 is), not the RESULT. it
 #   always prints, whether or not the test actually found support for
 #   it -- don't read it as a conclusion
 
 ## P-VALUE
-# - p-value: the probability of seeing a sample mean this far from 25.5
-#   if the TRUE mean bmi really were 25.5. THIS is where the
-#   actual verdict comes from -- e.g. p = 0.39 here is nowhere near
-#   significant, so we do NOT find support for H1: this data is
-#   perfectly consistent with a true mean bmi of 25.5
+# - p-value: the probability of seeing a sample mean at least this far
+#   from 3.9 if the TRUE mean cup price really were 3.9.
+#   THIS is where the actual verdict comes from -- here p = 0.028 < 0.05,
+#   so the result is significant: we REJECT H0 (the mean price is 3.9)
+#   and FOUND SUPPORT FOR H1 (the mean price differs from 3.9).
+#   The data are NOT consistent with a true mean cup price of 3.9.
+#   (The sample mean is 3.94, so the true mean is estimated to be
+#   slightly higher than 3.9.)
 
 ## CONFIDENCE INTERVAL
-# - 95 percent confidence interval: the plausible range for the true
-#   mean bmi -- 25.5 falls right inside it here, which lines up with
-#   that high p-value
+# - 95% CI [3.905, 3.981]: the range of plausible values for the true
+#   mean cup price. It does not contain 3.9, which is consistent with
+#   rejecting H0 at the 5% level.
 
 ## SAMPLE ESTIMATES
-# - sample estimates: the actual sample mean bmi
+# - sample estimates: the actual sample mean price
 # ====
+
+
+
+
+
+## THE SAME TEST, PIPE-FRIENDLY: rstatix::t_test()
+# ====
+# the rstatix package wraps the base tests so they work inside a pipe and
+# return a tidy data frame (one row, one column per quantity) instead of
+# printed text. that makes results easy to filter, store, or stack
+# together later (e.g. t-test and Wilcoxon in one table). it runs the same
+# test, so the numbers should match the base R output above exactly.
+#
+# ADVANTAGE: can do effect sizes natively (unlike base R)
+#
+# the formula "cap_eur ~ 1" reads "cap_eur against a constant": one sample,
+# no grouping variable. mu = the hypothesized value, as in base R.
+# detailed = TRUE adds the estimate and the confidence interval; without
+# it you only get the statistic, df and p-value
+# ====
+
+#library(rstatix), already in 00_setup.R for all scripts
+
+df_one <- data.frame(cap_eur = cap_eur_vals)
+
+df_one %>% 
+  t_test(cap_eur ~ 1, mu = hypothesized_cap, detailed = TRUE)
+
+# the output columns map straight onto the base R printout:
+#   estimate            -> "mean of x"
+#   statistic, df, p    -> t, df, p-value
+#   conf.low, conf.high -> the 95 percent confidence interval
+#   group1 / group2     -> "1" and "null model", i.e. the sample vs. the
+#                          hypothesized value (nothing to read into these)
+
+
+
+
+## EFFECT SIZE
+#
+# - The difference from 3.9 is only about 0.043 (roughly 1%). With
+#   n = 2501, even a tiny difference is statistically significant, so
+#   the result is statistically significant, but whether it matters
+#   practically is a separate question.
+
+
+## STANDARDIZING THE DIFFERENCE: COHEN'S d
+# ====
+# the raw gap (0.043 euros) is already an effect size, and often the most
+# interpretable one: "the average cappuccino is 4 cents above the claim".
+# but euros don't compare across variables (is 4 cents a lot for a
+# cappuccino? is 4 kg a lot for body weight?). Cohen's d fixes that by
+# measuring the gap in units of the variable's own spread:
+#
+#   d = (sample mean - mu) / sd
+#
+# note it's the same shape as the z-score from the top of this script:
+# "how many SDs away" -- but away from the hypothesized value, using the
+# sd of the raw data (NOT the standard error)
+# ====
+
+cohens_d_by_hand <- (mean(cap_eur_vals) - hypothesized_cap) / sd(cap_eur_vals)
+cohens_d_by_hand
+
+# the same number, straight from a function (rstatix; formula "~ 1" means
+# "one sample, no grouping variable", mu = the hypothesized value).
+# base R has no Cohen's d, so this is where rstatix earns its place
+df_one %>%
+  cohens_d(cap_eur ~ 1, mu = hypothesized_cap)
+
+# matches the by-hand value above. the "magnitude" column applies the
+# rough conventions (negligible / small / moderate / large) for you
+
+# matches the by-hand value above, and adds a 95% CI around d itself --
+# the same idea as a CI around a mean, just for the standardized gap.
+# (lsr::cohensD(cap_eur_vals, mu = hypothesized_cap) gives the same point
+# estimate if you prefer that package)
+
+# rough conventions (Cohen): 
+# |d| ~ 0.2 small, 
+#     ~ 0.5 medium, 
+#     ~ 0.8 large.
+# these are rules of thumb, not verdicts -- what counts as "large" depends
+# on the field and on what the difference means in practice
+
+## WHY d AND THE p-VALUE CAN DISAGREE
+# ====
+# the t-statistic and d are directly linked:
+#
+#   t = d * sqrt(n)
+#   d = sqrt(n) / t
+#
+# d does not depend on the sample size, but t (and therefore the p-value)
+# grows with sqrt(n). check it against the t-test output above:
+# ====
+
+cohens_d_by_hand * sqrt(length(cap_eur_vals))   # equals one_sample$statistic
+
+one_sample$statistic
+
+# here d is tiny (about 0.04 -- far below even the "small" benchmark), yet
+# t = 2.19 and p = 0.028, because n = 2501 multiplies a trivial d by
+# sqrt(2501) = 50. the same d with n = 50 would give t of about 0.3 and
+# nowhere near significance. so:
+#   - the p-value answers "is there a detectable difference?"  (depends on n)
+#   - the effect size answers "how big is it?"                  (does not)
+#
+# ALWAYS REPORT BOTH!
+# Significance without size can mean "real but trivial".
+# ====
+
+
+
+
 
 
 
@@ -293,7 +413,7 @@ median(cap_eur_vals)   # compare this to cap_mean above -- for a skewed
 # variable like cap_eur, expect these to differ
 
 # same reading as the t-test: p < 0.05 means the data is not consistent
-# with a true median of 3.50; p > 0.05 means it can't rule that out --
+# with a true median of 3.90; p > 0.05 means it can't rule that out --
 # just remember it's making that statement about the median, not the mean
 
 
@@ -337,6 +457,35 @@ cap_boot_median_ci      # bootstrap 95% interval around it
 # mean), built two different ways, and technically targeting two
 # different quantities (the median itself here, vs. the
 # Hodges-Lehmann estimator there)
+
+
+## NOW WITH RSTATIX
+# ====
+# same idea as with t_test(): same test, tidy one-row output. detailed =
+# TRUE adds the estimate and the confidence interval, which in base R
+# you only get with conf.int = TRUE
+# ====
+
+df_one %>%
+  wilcox_test(cap_eur ~ 1, mu = hypothesized_cap, detailed = TRUE)
+
+## EFFECT SIZE FOR THE WILCOXON: r
+# ====
+# Cohen's d is built from the mean and sd, so it matches the t-test, not
+# the Wilcoxon. the rank-based counterpart is r, the test's z-statistic
+# scaled by sample size (r = |z| / sqrt(n)). it ranges from 0 to 1
+# (rough conventions: 0.1 small, 0.3 medium, 0.5 large) and, like d, it
+# does NOT grow with n, while the p-value does
+# ====
+
+df_one %>%
+  wilcox_effsize(cap_eur ~ 1, mu = hypothesized_cap)
+
+# same lesson as with d: expect a tiny r even if the p-value is below 0.05.
+# the "magnitude" column applies the conventions for you
+
+
+
 
 
 ## RECAP: SEVEN TOOLS, THE SAME UNDERLYING QUESTION
