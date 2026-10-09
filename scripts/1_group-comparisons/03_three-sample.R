@@ -69,6 +69,7 @@ df_idx %>%
 
 
 ## WHY NOT JUST RUN SEVERAL T-TESTS?
+# FWER
 # ====
 # with three groups there are choose(3, 2) = 3 pairwise comparisons
 # (R-S, R-U, S-U). every test has a 5% chance of a false positive when H0
@@ -167,7 +168,7 @@ summary(aov_eur)
 
 # the pipe-friendly version (needs the car package installed). the "ges"
 # column is the effect size, see below
-df_three %>% anova_test(cap_eur ~ urban_class)
+df_three %>% anova_test(cap_eur ~ urban_class, detailed = TRUE)
 
 
 ## EFFECT SIZE FOR ANOVA: ETA SQUARED
@@ -225,7 +226,8 @@ df_idx   %>% levene_test(cap_index ~ urban_class)
 # ====
 # the same idea as the Welch t-test in 02: don't assume equal variances,
 # and adjust the degrees of freedom. base R's oneway.test() does this by
-# default (var.equal = FALSE). when in doubt, report this one: if the
+# default (var.equal = FALSE). 
+# WHEN IN DOUBT, REPORT THIS ONE: if the
 # variances turn out equal it costs almost nothing
 # ====
 
@@ -348,14 +350,19 @@ df_three %>% games_howell_test(cap_eur ~ urban_class)
 df_three %>% cohens_d(cap_eur ~ urban_class)
 
 
+
+
 ## POST HOC FOR THE NON-PARAMETRIC CASE: DUNN'S TEST
 # ====
 # after a significant Kruskal-Wallis, the matching post hoc is Dunn's test:
 # it compares the mean ranks of each pair, using the SAME overall ranking
-# as Kruskal-Wallis, and adjusts the p-values for multiple testing
+# as Kruskal-Wallis, and adjusts the p-values for multiple testing.
+# we STORE the result: the same Holm-adjusted p-values go onto the median
+# plot at the end of the script
 # ====
 
-df_idx %>% dunn_test(cap_index ~ urban_class, p.adjust.method = "holm")
+dunn_idx <- df_idx %>% dunn_test(cap_index ~ urban_class, p.adjust.method = "holm")
+dunn_idx
 
 # an alternative: separate Wilcoxon rank-sum tests for every pair, with the
 # same correction. here each pair is re-ranked on its own, so the answers
@@ -452,7 +459,44 @@ ggplot(cap_idx_ci, aes(x = urban_class, y = med)) +
 
 # same reading and same caveat as for the means: non-overlapping whiskers
 # are a strong hint, but these intervals are NOT corrected for multiple
-# comparisons. the formal verdict comes from Dunn's test above
+# comparisons. the formal verdict comes from Dunn's test above, so we now
+# put ITS p-values on the plot: the CIs show HOW BIG the differences are,
+# the brackets show WHETHER they are significant. (the two come from
+# different machinery: bootstrap on the medians vs. a test on the mean
+# ranks -- they usually agree, but if they don't, trust the bracket)
+
+# library(ggpubr)   # already in 00_setup.R
+
+# add two columns to the stored Dunn result:
+#   y.position   where each bracket sits: 10% above the highest CI limit,
+#                stacked, so brackets collide neither with whiskers nor
+#                with each other (change the 0.10 to loosen or tighten)
+#   p.label      the ADJUSTED p (Holm), never the raw one. tiny values are
+#                printed as "p < 0.001"
+dunn_plot <- dunn_idx %>%
+  mutate(y.position = max(cap_idx_ci$upper) * (1 + 0.10 * seq_len(n())),
+         p.label    = ifelse(p.adj < 0.001, "p < 0.001", paste0("p = ", signif(p.adj, 2))))
+
+ggplot(cap_idx_ci, aes(x = urban_class, y = med)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.05, linewidth = 1, color = "#2a78d6") +
+  geom_point(size = 2, color = "#2a78d6") +
+  # dunn_plot has its own columns (group1, group2), hence inherit.aes = FALSE
+  stat_pvalue_manual(dunn_plot, label = "p.label", y.position = "y.position",
+                     tip.length = 0.01, inherit.aes = FALSE) +
+  labs(x = NULL, y = "cap_index",
+       title = "Median cappuccino index (bootstrapped 95% CI) by urban class",
+       subtitle = "Pairwise p-values: Dunn's test, Holm-adjusted") +
+  theme_minimal()
+
+
+# tweaks:
+# - stars instead of p-values: label = "p.adj.signif" (already in the output)
+# - brackets too tight or too loose: change the 0.10 in y.position
+# - unequal variances / a different post hoc: swap dunn_test() for
+#   pairwise_wilcox_test() -- the columns group1, group2 and p.adj are the same
+# ====
+
+
 
 
 ## A NOTE ON INDEPENDENCE
