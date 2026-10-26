@@ -51,35 +51,6 @@ ggplot(df_cont, aes(x = wage_eur, y = cap_eur)) +
        title = "Cappuccino price vs hourly wage") +
   theme_minimal()
 
-# wages are often right-skewed (many ordinary wages, a few very high
-# ones), and a few extreme points can dominate a straight-line summary. a
-# common remedy is to look at the LOGARITHMS: equal distances on a log
-# axis mean equal PERCENTAGE differences, which is usually how prices and
-# wages compare across countries
-ggplot(df_cont, aes(x = wage_eur, y = cap_eur)) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "lm", formula = y ~ x, color = "#e34948") +
-  scale_x_log10() +
-  scale_y_log10() +
-  labs(x = "wage_eur (log scale)", y = "cap_eur (log scale)",
-       title = "The same data on log-log axes") +
-  theme_minimal()
-
-df_cont %>%
-  summarise(across(c(wage_eur, cap_eur),
-                   list(mean = mean, median = median, sd = sd, min = min, max = max)))
-
-# (a mean far from the median, or a max many sds above the mean, is the
-# numeric signature of skew and extreme values)
-#
-# result: contrary to the usual picture of a right-skewed wage, here the
-# mean wage (13.1) is BELOW the median (14.2): most cities sit at fairly
-# high wages and a tail of low ones pulls the mean down -- as low as 0.20
-# euros per hour, which is suspicious (a typo? a different unit?). at the
-# other end the maximum is 50, almost 7 sds above the mean. prices look
-# well-behaved on average (mean 3.94, median 3.99, sd 0.97) but have an
-# extreme maximum of 12.04, more than 8 sds above the mean. so BOTH
-# variables have a few extreme points, and we should expect them to matter
 
 
 ## THE QUESTION AND THE HYPOTHESES
