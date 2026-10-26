@@ -356,8 +356,11 @@ c(F = unname(summary(fit)$fstatistic[1]), t_squared = t_b1^2)
 # ====
 
 fit_c <- lm(cap_eur ~ I(wage_eur - mean(wage_eur)), data = df_cont)   # I() = "compute this as written"
+summary(fit_c)
+
 coef(fit_c)
 c(mean_price = mean(y), mean_wage = mean(x))
+
 
 # result: the intercept is now 3.94 = the mean price (the line passes through
 # the point of means -- see the formula for b0), and the slope is still
@@ -374,6 +377,8 @@ c(mean_price = mean(y), mean_wage = mean(x))
 # ====
 
 fit_10 <- lm(cap_eur ~ I(wage_eur / 10), data = df_cont)
+summary(fit_10)
+
 summary(fit_10)$coefficients
 
 # slope x 10 (price in cents instead of euros would multiply it by 100):
