@@ -1,0 +1,148 @@
+%% =====================================================================
+%%  Prague Cafe Project -- student report template
+%%  Fill in the text, delete every comment that starts with "HINT".
+%%  Tables and figures are produced by YOUR R script and loaded here.
+%%  Put cafestyle.sty in the same folder as this file.
+%% =====================================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage{cafestyle}
+
+% Include an R-exported file if it exists, otherwise show a visible placeholder
+% (so that the template compiles before your script has produced anything).
+\newcommand{\inputtable}[1]{\IfFileExists{#1}{\input{#1}}{\par\noindent\fbox{\parbox{0.9\linewidth}{\centering Missing table file: \texttt{\detokenize{#1}}}}\par}}
+\newcommand{\inputfigure}[2][0.85]{\IfFileExists{#2}{\includegraphics[width=#1\linewidth]{#2}}{\fbox{\parbox{0.8\linewidth}{\centering Missing figure file: \texttt{\detokenize{#2}}}}}}
+
+\title{\textbf{Title of your report: what you asked and what you found}}
+\author{Your Name\\[0.3ex]\small Data Analytics, Batch \textit{N}\\[0.3ex]\small Partner: Name of the other student in your batch}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent HINT (about 100 words): the outcome variable, the sample (how many caf\'es), the analyses you cover, and the two or three main results with their effect sizes in the original units. No new information that is not in the text below.
+\end{abstract}
+
+\section{Introduction}
+HINT: two or three sentences on why the price (or rating, or popularity) of a caf\'e might depend on the variables of your batch. State the research questions in plain words. Do not describe the methods here.
+
+\section{Data and methods}
+
+\subsection{Data}
+HINT: where the data come from (collected by students in the class), the number of caf\'es in the raw file and in the analysis dataset, every cleaning step your cleaning script applies (empty rows dropped, district labels harmonised, thousands separator removed, blank type set to missing, rule for cells with several prices) with the number of caf\'es affected, and the number of missing values in each variable you use. Say which variables were log-transformed and why. Keep this part short: the full descriptive statistics (Table~\ref{tab:desc}) and the distribution checks are in Appendices~\ref{app:desc} and~\ref{app:dist}, and the main text only mentions what a reader needs in order to follow the results.
+
+\subsection{Statistical methods}
+HINT: one short paragraph. State $\alpha=.05$, the tests you used for each question, why you chose them (look at the plot, the sample size and the shape of the distribution), how confidence intervals were computed (including the bootstrap settings and the seed), which adjustment was applied to multiple comparisons, and the software with version numbers.
+
+\section{Results}
+
+HINT: the main text carries only the main results; checks, diagnostics and robustness analyses go to the appendices and are cited from here. Start with one captioned summary table of the main results of all ten analyses (\verb|tables/summary.tex|), then load each analysis' table and figure by its name, each inside a table or figure environment with a \verb|\caption| and a \verb|\label| (for example \verb|tables/A2_table.tex| and \verb|figures/A2_figure.pdf|). One subsection per analysis. In each, in this order: the question and the hypotheses with the direction fixed in advance; the plot; the estimate with its confidence interval; the effect size with its confidence interval; the test statistic with degrees of freedom and the exact $p$-value; one sentence of interpretation in the units of the data. Use the macros from the style file so that the format is identical everywhere, for example:
+
+\begin{quote}\small
+\verb|\meanci{XX.X}{XX.X}{XX.X}{CZK}| gives \meanci{XX.X}{XX.X}{XX.X}{CZK}\\
+\verb|\diffci{X.X}{X.X}{X.X}{CZK}{0.XX}{0.XX}{0.XX}| gives \diffci{X.X}{X.X}{X.X}{CZK}{0.XX}{0.XX}{0.XX}\\
+\verb|\tstat{XX.X}{X.XX}, \pval{.XXX}| gives \tstat{XX.X}{X.XX}, \pval{.XXX}\\
+\verb|\Fstat{X}{XX.X}{X.XX}| gives \Fstat{X}{XX.X}{X.XX}
+\end{quote}
+
+\subsection{A1: One-sample test}
+Question, hypotheses, plot, estimate, interpretation. Remember that the benchmark was fixed before looking at the data.
+
+\subsection{A2: Two groups}
+State the direction of the subtraction in words. Report the mean difference with its confidence interval and Cohen's $d$ with its confidence interval.
+
+\subsection{A3: Paired comparison}
+Report the mean of the within-caf\'e differences, its confidence interval and $d_z$. Show the differences in a plot.
+
+\subsection{A4: Three or more groups}
+Report the omnibus test, $\eta^2$, and the post hoc comparisons with adjusted $p$-values and confidence intervals. Show group means with confidence intervals in Figure~\ref{fig:groups}.
+
+\begin{figure}[ht]
+\centering
+\inputfigure{figures/A4_figure.pdf}
+\caption{Self-contained caption: what is on the axes (with units), what the points and bars show, what the error bars are (95\% confidence intervals), and the sample sizes.}
+\label{fig:groups}
+\end{figure}
+
+\subsection{A5: Association of two categorical variables}
+Report the counts and percentages, the test with $N$, the smallest expected count, Cram\'er's $V$ with its interval, and the cells with the largest standardised residuals.
+
+\subsection{A6: Correlation}
+Report $r$ with its confidence interval, $n$, and the rank-based coefficients next to it. Say nothing about causes.
+
+\subsection{A7: Simple regression}
+Report the slope in the units of the outcome per unit of the predictor, its robust confidence interval, $R^2$ and what the residual plots show.
+
+\subsection{A8: Multiple regression}
+Report both models side by side in Table~\ref{tab:reg}, the nested $F$-test and the change in the slope of interest. Mention the variance inflation factors.
+
+\begin{table}[ht]
+\centering
+\caption{Regression estimates with robust standard errors in parentheses and 95\% confidence intervals. The outcome is stated in the table note.}
+\label{tab:reg}
+\inputtable{tables/A8_table.tex}
+\end{table}
+
+\subsection{A9: Interaction}
+Report the interaction coefficient with its confidence interval, the nested $F$-test, the slope of interest in each group with its interval, and show the fitted lines by group over the data.
+
+\subsection{A10: Logistic regression}
+State how the binary outcome was created (the median and its value, or the definition of the indicator). Report the average marginal effect of distance in percentage points with its 95\% confidence interval as the headline, the odds ratio only as a check, the number of observations and events, and show a predicted-probability plot.
+
+\section{Discussion}
+HINT: what the results together say about your outcome, which results are exploratory, and what a reader should and should not conclude. Discuss at least these limits: a convenience sample collected by students, observational data, and prices of caf\'es in the same district that are not independent of one another. Write ``in this sample'' unless you can defend a wider claim.
+
+\appendix
+
+\section{Descriptive statistics}\label{app:desc}
+HINT: the full description of every variable used (the output of your descriptive script): $n$, number missing, mean with 95\% confidence interval, standard deviation, median, interquartile range and range, and counts and percentages for categorical variables.
+
+\begin{table}[ht]
+\centering
+\caption{Descriptive statistics of the variables used. Means are shown with 95\% confidence intervals.}
+\label{tab:desc}
+\inputtable{tables/descriptives.tex}
+\end{table}
+
+\section{Distributions and normality}\label{app:dist}
+HINT: what the plots and checks of your descriptive script showed for the variables you test: skewness, outliers, the shape within each group, and the result of the normality check. State which test you treat as primary for each question as a consequence.
+
+\begin{figure}[ht]
+\centering
+\inputfigure{figures/distributions.pdf}
+\caption{Self-contained caption: the variables shown, the plot type (histogram, density, boxplot, Q--Q plot), and the sample sizes.}
+\label{fig:dist}
+\end{figure}
+
+\section{Regression diagnostics}\label{app:diag}
+HINT: residual plots, Q--Q plots of the residuals, leverage and influential observations, variance inflation factors, and whether the conclusion survives without the influential observations.
+
+\section{Alternative tests and robustness}\label{app:robust}
+HINT: the second method named for each question (parametric or rank-based), alternative specifications, bootstrap results, the full post hoc tables, and anything else that checks the main result.
+
+\section{Reproducibility}\label{app:repro}
+HINT: the repository link and the names of your three scripts (cleaning, descriptives, tests), the R version, the packages used, and the seed for all bootstrap procedures.
+
+%% ---------------------------------------------------------------
+%% HINT for your R script: export a table and a figure like this.
+%%
+%%   library(xtable)
+%%   print(xtable(desc_tab, digits = 2), file = "tables/descriptives.tex",
+%%         floating = FALSE, booktabs = TRUE, include.rownames = FALSE)
+%%
+%%   # or, for regression models:
+%%   library(modelsummary)
+%%   modelsummary(list("Simple" = m1, "Multiple" = m2), vcov = "HC3",
+%%                statistic = "conf.int", output = "tables/A8_table.tex")
+%%
+%%   ggsave("figures/A4_figure.pdf", p, width = 6, height = 4)
+%%
+%%   # one table and one figure per analysis, named by analysis:
+%%   #   tables/A1_table.tex, figures/A1_figure.pdf, ... tables/A10_table.tex, figures/A10_figure.pdf
+%%
+%% Average marginal effects for the logit:
+%%   library(marginaleffects)
+%%   avg_slopes(m_logit)
+%%
+%% ---------------------------------------------------------------
+\end{document}

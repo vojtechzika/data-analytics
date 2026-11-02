@@ -1,0 +1,201 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{cafestyle}
+
+% \analysis{number}{label}{question}{null}{alternative}{methods}
+\newcommand{\analysis}[6]{%
+  \par\smallskip\noindent\textbf{A#1\enspace #2.}\enspace #3\enspace
+  \Ho: #4\enspace \Hone: #5\enspace \textit{Methods:} #6\par}
+\title{\textbf{The Prague Caf\'e Project}\\[0.4ex]\large Research questions, tests and reporting standards}
+\author{Data Analytics}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent The project analyses data on caf\'es in Prague: the prices of four coffees, the Google rating and number of ratings, seating, the distance from the Orloj, the district and the caf\'e type. Each student is assigned to one of five batches. All batches apply the same ten statistical methods, each to a different set of variables, and the two students in a batch answer the same questions. Every student submits three R scripts (cleaning, descriptive analysis, and tests) and a \LaTeX\ report, and presents the results in a talk of 10 to 15 minutes. This document states the questions, names the method for each, and fixes how results are reported.
+\end{abstract}
+
+\tableofcontents
+
+\section{Design of the project}
+
+Every batch runs ten analyses in a fixed order: a one-sample test, a two-group comparison, a paired comparison, a comparison of three or more groups, a test of association between two categorical variables, a correlation, a simple regression, a multiple regression, a regression with an interaction and a logistic regression with marginal effects. Each question comes with its hypotheses and the methods to be used. Where two methods are named (for example a $t$-test and a rank test), both are run and the report says whether they agree and which one the student trusts more, with a reason.
+
+The two students of a batch work on the same questions and may cooperate freely, but each student must write and submit their own code and their own report. Scripts that are copied between the two students are not accepted. In the presentations the two students share the findings: each presents about half of them, and the division is left to the pair. Because the results defense in the following week is run on each student's own printed code, each student must be able to explain every line they submit.
+
+\section{Data and general rules}
+
+\subsection*{The variables}
+
+Every row of the data file is one caf\'e, entered by the student who visited it. The file contains the name of the student who collected the caf\'e, the date and time of the visit, the district as a number and as a name, the name and address of the caf\'e, its coordinates and a link to its Google Maps entry. The prices are in Czech crowns for a dine-in drink with normal milk: the espresso, the cappuccino, the flat white, and a filter or batch coffee, which is recorded as NA when it is not offered. The payment methods accepted are recorded as text. The number of seats inside and the number of seats outside are counts. The Google rating is on a scale from 1 to 5, and the number of Google ratings is a count that may contain a thousands separator. The caf\'e type is independent, local chain or international chain, and the roastery indicator is 1 for a caf\'e that roasts its own coffee and 0 otherwise, with some cells left blank. The distance from the Orloj, the astronomical clock in the centre of Prague, is given in kilometres and is calculated automatically from the latitude and longitude, which are also in the file. The remaining columns, a photo folder and a free-text note, are not used in the analyses but the notes often explain unusual prices. Because the data were entered by many students, labels and formats are not uniform, and several cells contain more than one value.
+
+Each student cleans the raw data file with their own script. The cleaning script reads the raw file, which is never edited by hand, applies every cleaning step in code, and writes the cleaned dataset on which the analysis is run. At a minimum it must drop empty rows, harmonise the district labels (``prague 1'', ``prauge 1'' and similar), remove the thousands separator from the number of ratings, and set a blank caf\'e type to missing. Cells that list several prices (such as ``85, 95, 105'' or ``65/40'') need an explicit rule; the default is to take the first listed price, which is the dine-in or smallest size. Every cleaning decision is described in the data section of the report, together with the number of caf\'es affected, because different decisions can change the results.
+
+The number of ratings and the number of seats are strongly right-skewed and one caf\'e has no ratings at all, so wherever they enter a correlation or a regression, as outcome or as predictor, they are used as $\log(x+1)$. Where a question compares their raw values (for instance seats inside against seats outside), the raw counts are used and the skewness is dealt with by the choice of method. District comparisons use only districts with at least twelve caf\'es (Prague 1, 2, 3, 5, 7 and 8). Where the one-sample question does not give a benchmark, it is the student's own expectation, written down before the data are opened, and the report states where it came from. Hypotheses, including the direction of any one-tailed alternative, are written before any test is run.
+
+Every figure is drawn before the corresponding test is run, and every regression is accompanied by residual plots. Results that were not planned are labelled exploratory. No student is graded on statistical significance: a clear null result, well interpreted, is a complete answer.
+
+\section{Reporting standards}
+
+\subsection*{General conventions}
+
+The significance level is $\alpha=.05$ and is stated once in the methods section. Test statistics are reported with their degrees of freedom, as in $t(df)$, $F(df_1,df_2)$ or $\chi^2(df,N)$, and Welch degrees of freedom are given to one decimal. Exact $p$-values are given to three decimals without a leading zero (\pr\,=\,.034), and very small ones are written as \plt{.001}, never as $p=0$. Test statistics and estimates are rounded to two decimals, money to the nearest tenth of a crown, and a confidence interval carries the same number of decimals as its estimate. Symbols for statistics are set in italics, and every estimate carries its unit (CZK, kilometres, rating points). All numbers in the examples below are invented for illustration and are not results. Numbers are never reported without the sample size they rest on, and the number of cafés lost to missing values is stated for each analysis.
+
+A $p$-value alone never closes a sentence. A result is reported as an estimate, a measure of its uncertainty and a measure of its size, in this order, and only then as a test. The text then says what the estimate means in the units of the data, and whether a difference of that size would matter to a customer or an owner.
+
+\subsection*{Describing the data}
+
+The data are described before any test is run, in the second script. The report summarises the description in the data section and gives the full description in the appendices. For every variable used, the report gives the number of observations and of missing values; for numeric variables the mean, the standard deviation, the median, the interquartile range and the range; for categorical variables the counts and percentages. Every numeric variable is plotted with a histogram or density plot and a boxplot, and groups to be compared are plotted side by side. Normality is assessed in each group, or on the residuals for a regression, with a normal Q--Q plot and the skewness, and may be supplemented by the Shapiro--Wilk test. The plot has priority over the test, because in small samples the test has little power and in large samples it rejects for deviations that do not matter. The report states what the check showed and which of the two methods named for each question is therefore treated as the primary one, and the other is reported as a check.
+
+\subsection*{Means and medians}
+
+Every mean is reported with its 95\% confidence interval and its sample size, for example \meanci{82.4}{79.8}{85.0}{CZK}, $n=312$. The standard deviation is given alongside the mean in the descriptive table. For skewed variables the median and the interquartile range are reported next to the mean, and a bootstrap confidence interval (percentile or BCa, at least 5{,}000 resamples, with the seed stated) replaces the $t$-based interval whenever the plot shows that the normal approximation is doubtful. Confidence intervals are drawn in the figures, not only written in the text.
+
+\subsection*{Differences between means}
+
+Every mean difference is reported with the direction of the subtraction stated in words (``Prague 1 minus the rest''), its 95\% confidence interval, and a standardised effect size with its own confidence interval: Cohen's $d$ for two independent groups, using Hedges' $g$ when a group has fewer than twenty observations, and $d_z$ (the mean difference divided by the standard deviation of the differences) for paired data. A complete sentence reads, for example, \diffci{4.1}{1.2}{7.0}{CZK}{0.31}{0.09}{0.53}. Cohen's rules of thumb (0.2, 0.5, 0.8) are mentioned at most once and never replace an interpretation in crowns. For a one-tailed alternative the report still shows the two-sided interval and states that the $p$-value is one-tailed and was fixed in advance. If both a $t$-test and a rank test are run, the Hodges--Lehmann shift or the rank-biserial correlation is given for the rank test, with a confidence interval.
+
+\subsection*{Three or more groups}
+
+An omnibus test is reported as Welch's $F(df_1,df_2)$ together with $\eta^2$ (or $\omega^2$) and its confidence interval, and the Kruskal--Wallis result as $H(df)$ with $\varepsilon^2$. A significant omnibus test is never the end of the analysis: the report names which pairs differ, using Tukey, Games--Howell or Dunn with Holm adjustment, and gives for each pair the mean difference, the adjusted $p$-value and the confidence interval. The group means are shown together with their confidence intervals in one figure.
+
+\subsection*{Two categorical variables}
+
+A chi-square test is reported as $\chi^2(df,N)$ with the counts and row percentages in the text or in an exported table, the smallest expected count, and Cram\'er's $V$ with a confidence interval. When any expected count is below five, Fisher's exact test is used and the odds ratio is given with its confidence interval for $2\times2$ tables. Standardised residuals larger than 2 in absolute value identify the cells that drive the association.
+
+\subsection*{Correlation}
+
+The scatterplot is shown first. The coefficient is reported with its 95\% confidence interval and $n$, as in $r=-.21$, \CI{-.30}{-.12}, and the squared coefficient is given as the share of variance shared. Pearson's $r$ is accompanied by Spearman's $\rho$ and Kendall's $\tau$, with a bootstrap interval for at least one of them. A correlation is not described as an effect, and the sentence says nothing about causes.
+
+\subsection*{Regression}
+
+A regression table is exported by script and contains the number of observations, each coefficient with its robust standard error and 95\% confidence interval, $R^2$, adjusted $R^2$ and the residual standard error. The text states the slope in the units of the outcome per unit of the predictor, and for logged variables as a percentage change (a coefficient $b$ on a log outcome means a $100\,(e^{b}-1)\%$ change). The residual-versus-fitted plot, the normal Q--Q plot and the leverage plot are inspected, influential observations are named, and the report says whether the conclusion survives their removal. A nested comparison of two models is reported as $F(df_1,df_2)$, the change in $R^2$, and, for the multiple regression, the variance inflation factors. The report always says how much the slope of interest changed when the second predictor entered, in absolute and relative terms.
+
+\subsection*{Interactions}
+
+A regression with an interaction is reported with the interaction coefficient and its 95\% confidence interval, the nested $F$-test against the model without it, and the change in $R^2$. The slope of the variable of interest is then stated separately for each group, with its own confidence interval, because the interaction coefficient alone is the difference between two slopes and is hard to read. A plot of the fitted lines by group, drawn over the data, is shown. A non-significant interaction is not evidence that the slopes are equal, and the report says how large a difference the interval still allows.
+
+\subsection*{Logistic regression}
+
+The headline result is the average marginal effect of the predictor of interest, stated as a change in probability in percentage points with its 95\% confidence interval, for example: ``each additional kilometre from the Orloj lowers the probability of a cappuccino above the median price by 5.1 percentage points, \CI{0.2}{10.0}, other things equal.'' The odds ratio and its interval may be added as a check. The number of observations, the number of events and McFadden's pseudo-$R^2$ are given, and a predicted-probability plot with a confidence band is shown. When the binary outcome is created by splitting a variable at its median, the median used is stated.
+
+\subsection*{Many tests and exploratory results}
+
+The report counts how many tests it contains. Tests answering one family of questions (for instance all pairwise district comparisons) are adjusted with Holm's method. Anything not planned in advance is called exploratory, and a single significant result among many is described as a hypothesis for future work, not as a finding.
+
+\subsection*{Figures, tables and interpretation}
+
+Every figure shows the data (points, distribution or both) together with the estimate and its confidence interval, has labelled axes with units, and carries a caption that can be understood without the text. Every table also carries a caption, numbered like the figures and cited in the text. Every table is produced by the R script and included with \verb|\input|, never typed by hand, and uses the \texttt{booktabs} rules. The discussion keeps three limits in view: the sample is a convenience sample collected by students and not a random sample of Prague caf\'es, the data are observational, and the prices of caf\'es in the same district are not independent of one another. A conclusion is written as ``in this sample'' unless the student can defend a wider claim.
+
+\clearpage
+\section{The five batches}
+
+\subsection{Batch 1: cappuccino price and location}
+
+The outcome is the cappuccino price in CZK. The question is whether location (distance from the Orloj, Prague 1, district) and caf\'e type explain it.
+
+\analysis{1}{One sample}{Is the average Prague cappuccino price different from your own prior guess?}{the mean equals the benchmark you chose in advance.}{the mean differs from it.}{one-sample $t$-test, Wilcoxon signed-rank test, bootstrap confidence interval.}
+\analysis{2}{Two groups}{Is a cappuccino dearer in Prague 1 than in the rest of Prague?}{mean prices are equal.}{Prague 1 is higher (one-tailed).}{Welch $t$-test, Wilcoxon rank-sum test, Cohen's $d$.}
+\analysis{3}{Paired}{How much more does a cappuccino cost than an espresso in the same caf\'e?}{the mean difference is zero.}{the cappuccino is dearer (one-tailed).}{paired $t$-test, Wilcoxon signed-rank test.}
+\analysis{4}{Several groups}{Do cappuccino prices differ across districts 1, 2, 3, 5, 7 and 8?}{all district means are equal.}{at least one differs.}{Welch ANOVA, Kruskal--Wallis test, Games--Howell or Dunn post hoc test.}
+\analysis{5}{Two categorical variables}{Is the caf\'e type (independent, local chain, international chain) related to being in Prague 1?}{type and location are independent.}{they are associated.}{chi-square test or Fisher's exact test, Cram\'er's $V$, standardised residuals. The international chain group has only eleven caf\'es, so check the expected counts before choosing.}
+\analysis{6}{Correlation}{Does the price fall with the distance from the Orloj?}{$\rho=0$.}{$\rho<0$, because the centre is dearer (one-tailed).}{Pearson, Spearman and Kendall coefficients, bootstrap confidence interval.}
+\analysis{7}{Simple regression}{By what percentage does the price of a cappuccino change with each kilometre from the Orloj, and is the relationship better described in crowns per kilometre?}{the slope is zero.}{the slope is not zero.}{simple regression of $\log(\text{price})$ on distance (log-linear), compared with price on distance in crowns, residual plots, robust standard errors. With the outcome in logs, $100\,(e^{b}-1)$ is the percentage change per kilometre, and the statement needs a sentence on what the data can and cannot say about why.}
+\analysis{8}{Multiple regression}{Does the distance slope survive once caf\'e type is in the model?}{caf\'e type adds nothing.}{caf\'e type improves the model.}{multiple regression of price on distance and type, nested $F$-test, variance inflation factors.}
+\analysis{9}{Interaction}{Does the price fall with the distance from the Orloj in the same way for independent caf\'es and for chains (local and international together)?}{the interaction coefficient is zero, so the distance slope is the same in both groups.}{the interaction coefficient is not zero.}{multiple regression of price on distance, chain indicator and their interaction, nested $F$-test against the model without the interaction, the distance slope in each group with its confidence interval, plot of the fitted lines.}
+\analysis{10}{Logistic regression}{By how many percentage points does the probability that a cappuccino costs more than the median price (83 CZK) change with each kilometre from the Orloj?}{the distance coefficient is zero.}{the distance coefficient is not zero.}{logit of the indicator on distance and caf\'e type, average marginal effect of distance in percentage points, predicted-probability plot.}
+
+\clearpage
+\subsection{Batch 2: espresso price and caf\'e type}
+
+The outcome is the espresso price in CZK. The question is what kind of caf\'e charges more.
+
+\analysis{1}{One sample}{Is the average espresso price different from your own prior guess?}{the mean equals the benchmark you chose in advance.}{the mean differs from it.}{one-sample $t$-test, Wilcoxon signed-rank test, bootstrap confidence interval.}
+\analysis{2}{Two groups}{Do chains (local and international together) charge more for espresso than independents?}{mean prices are equal.}{chains are higher (one-tailed).}{Welch $t$-test, Wilcoxon rank-sum test, Cohen's $d$.}
+\analysis{3}{Paired}{How much more does a flat white cost than an espresso in the same caf\'e?}{the mean difference is zero.}{the flat white is dearer (one-tailed).}{paired $t$-test, Wilcoxon signed-rank test.}
+\analysis{4}{Several groups}{Does the espresso price differ across the three caf\'e types?}{all type means are equal.}{at least one differs.}{Welch ANOVA, Kruskal--Wallis test, Games--Howell or Dunn post hoc test. The international chain group has only eleven caf\'es and a much wider spread, so Welch and Games--Howell are safer than the classic ANOVA and Tukey.}
+\analysis{5}{Two categorical variables}{Is being a roastery related to caf\'e type?}{the two are independent.}{they are associated.}{Fisher's exact test because the cells are small, Cram\'er's $V$.}
+\analysis{6}{Correlation}{Is the espresso price related to the Google rating?}{$\rho=0$.}{$\rho\neq0$ (two-tailed, no strong prior).}{Pearson, Spearman and Kendall coefficients, bootstrap confidence interval.}
+\analysis{7}{Simple regression}{How many crowns does the espresso change per rating point?}{the slope is zero.}{the slope is not zero.}{simple regression of espresso price on rating, residual plots, robust standard errors.}
+\analysis{8}{Multiple regression}{Does the rating slope change once caf\'e type is in the model?}{caf\'e type adds nothing.}{caf\'e type improves the model.}{multiple regression of price on rating and type, nested $F$-test, variance inflation factors.}
+\analysis{9}{Interaction}{Is the relationship between the espresso price and the rating the same for independent caf\'es and for chains (local and international together)?}{the interaction coefficient is zero, so the rating slope is the same in both groups.}{the interaction coefficient is not zero.}{multiple regression of espresso price on rating, chain indicator and their interaction, nested $F$-test against the model without the interaction, the rating slope in each group with its confidence interval, plot of the fitted lines.}
+\analysis{10}{Logistic regression}{By how many percentage points does the probability that an espresso costs more than the median price (65 CZK) change with each kilometre from the Orloj?}{the distance coefficient is zero.}{the distance coefficient is not zero.}{logit of the indicator on distance and caf\'e type, average marginal effect of distance in percentage points, predicted-probability plot.}
+
+\clearpage
+\subsection{Batch 3: flat white price and the venue}
+
+The outcome is the flat white price in CZK. The question is whether the size and setting of the caf\'e (seats, outdoor seating, distance) go with price.
+
+\analysis{1}{One sample}{Is the average flat white price different from your own prior guess?}{the mean equals the benchmark you chose in advance.}{the mean differs from it.}{one-sample $t$-test, Wilcoxon signed-rank test, bootstrap confidence interval.}
+\analysis{2}{Two groups}{Do caf\'es with outdoor seating charge more for a flat white?}{mean prices are equal.}{caf\'es with outdoor seating are higher (one-tailed).}{Welch $t$-test, Wilcoxon rank-sum test, Cohen's $d$.}
+\analysis{3}{Paired}{How much more does a flat white cost than a cappuccino in the same caf\'e?}{the mean difference is zero.}{the flat white is dearer (one-tailed).}{paired $t$-test, Wilcoxon signed-rank test.}
+\analysis{4}{Several groups}{Does the flat white price differ across the three caf\'e types?}{all type means are equal.}{at least one differs.}{Welch ANOVA, Kruskal--Wallis test, Games--Howell or Dunn post hoc test.}
+\analysis{5}{Two categorical variables}{Is outdoor seating related to being in Prague 1?}{the two are independent.}{they are associated.}{chi-square test, Cram\'er's $V$, standardised residuals.}
+\analysis{6}{Correlation}{Is the flat white price related to the number of seats inside?}{$\rho=0$.}{$\rho>0$, because bigger caf\'es charge more (one-tailed).}{Pearson on $\log(\text{seats}+1)$, Spearman and Kendall coefficients, bootstrap confidence interval. One caf\'e has 260 seats, so work on the log scale and show that the result does not depend on that row.}
+\analysis{7}{Simple regression}{How many crowns does a flat white change when the number of seats doubles?}{the slope is zero.}{the slope is not zero.}{simple regression of price on $\log(\text{seats}+1)$, residual plots, robust standard errors.}
+\analysis{8}{Multiple regression}{Does the seats slope change once distance is in the model?}{distance adds nothing.}{distance improves the model.}{multiple regression of price on log seats and distance, nested $F$-test, variance inflation factors.}
+\analysis{9}{Interaction}{Does the effect of caf\'e size on the flat white price differ between Prague 1 and the rest of Prague?}{the interaction coefficient is zero, so the seats slope is the same in both areas.}{the interaction coefficient is not zero.}{multiple regression of price on $\log(\text{seats}+1)$, a Prague 1 indicator and their interaction, nested $F$-test against the model without the interaction, the seats slope in each area with its confidence interval, plot of the fitted lines.}
+\analysis{10}{Logistic regression}{By how many percentage points does the probability that a caf\'e has outdoor seating change with each kilometre from the Orloj?}{the distance coefficient is zero.}{the distance coefficient is not zero.}{logit of an indicator for at least one outdoor seat on distance and $\log(\text{seats}+1)$, average marginal effect of distance in percentage points, predicted-probability plot.}
+
+\clearpage
+\subsection{Batch 4: Google rating}
+
+The outcome is the Google rating (3.6 to 5.0). The question is what goes with a better-rated caf\'e. Ratings are bounded and skewed, so the rank-based tests carry more weight in this batch.
+
+\analysis{1}{One sample}{Is the average rating different from 4.5, the level one would call a good caf\'e?}{the mean equals 4.5.}{the mean differs from 4.5.}{one-sample $t$-test, Wilcoxon signed-rank test, bootstrap confidence interval.}
+\analysis{2}{Two groups}{Do roasteries have a different rating from other caf\'es?}{mean ratings are equal.}{they differ (two-tailed).}{Welch $t$-test, Wilcoxon rank-sum test, Cohen's $d$.}
+\analysis{3}{Paired}{Do caf\'es have more seats inside than outside?}{the mean difference is zero.}{there are more seats inside (one-tailed).}{paired $t$-test on the differences, Wilcoxon signed-rank test. Seat counts are very skewed, so check the paired differences with a plot and compare the $t$-test with the Wilcoxon result.}
+\analysis{4}{Several groups}{Does the rating differ across the three caf\'e types?}{all type distributions are equal.}{at least one differs.}{Kruskal--Wallis test, Dunn post hoc test with Holm adjustment, Welch ANOVA as a check.}
+\analysis{5}{Two categorical variables}{Is a high rating (at or above the median, 4.6) related to caf\'e type?}{the two are independent.}{they are associated.}{Fisher's exact test because international chains are few, Cram\'er's $V$.}
+\analysis{6}{Correlation}{Is the rating related to how many people rated the caf\'e?}{$\rho=0$.}{$\rho\neq0$.}{Pearson on $\log(\text{ratings}+1)$, Spearman and Kendall coefficients, bootstrap confidence interval.}
+\analysis{7}{Simple regression}{How many rating points does the rating change per doubling of the number of ratings?}{the slope is zero.}{the slope is not zero.}{simple regression of rating on $\log(\text{ratings}+1)$, residual plots, robust standard errors.}
+\analysis{8}{Multiple regression}{Does the slope change once the cappuccino price is in the model?}{price adds nothing.}{price improves the model.}{multiple regression of rating on log ratings and cappuccino price, nested $F$-test, variance inflation factors.}
+\analysis{9}{Interaction}{Is the relationship between the rating and the number of ratings the same in Prague 1 and in the rest of Prague?}{the interaction coefficient is zero, so the slope is the same in both areas.}{the interaction coefficient is not zero.}{multiple regression of rating on $\log(\text{ratings}+1)$, a Prague 1 indicator and their interaction, nested $F$-test against the model without the interaction, the slope in each area with its confidence interval, plot of the fitted lines.}
+\analysis{10}{Logistic regression}{By how many percentage points does the probability of a rating at or above the median (4.6) change with each kilometre from the Orloj?}{the distance coefficient is zero.}{the distance coefficient is not zero.}{logit of the indicator on distance and $\log(\text{ratings}+1)$, average marginal effect of distance in percentage points, predicted-probability plot.}
+
+\clearpage
+\subsection{Batch 5: popularity and size}
+
+The outcome is popularity, measured by the number of Google ratings on the log scale. The question is where the busy caf\'es are.
+
+\analysis{1}{One sample}{Is the typical number of seats inside different from 30?}{the mean equals 30.}{the mean differs from 30.}{one-sample $t$-test, Wilcoxon signed-rank test, bootstrap confidence interval; the data are skewed, so lead with the bootstrap.}
+\analysis{2}{Two groups}{Do caf\'es in Prague 1 have more ratings than caf\'es elsewhere?}{mean log ratings are equal.}{Prague 1 is higher (one-tailed).}{Welch $t$-test, Wilcoxon rank-sum test, Cohen's $d$.}
+\analysis{3}{Paired}{Does a filter coffee cost the same as a cappuccino in the same caf\'e?}{the mean difference is zero.}{the prices differ (two-tailed).}{paired $t$-test, Wilcoxon signed-rank test. Only about 54 caf\'es list a filter price.}
+\analysis{4}{Several groups}{Does the number of ratings differ across districts 1, 2, 3, 5, 7 and 8?}{all district means of log ratings are equal.}{at least one differs.}{Welch ANOVA, Kruskal--Wallis test, Games--Howell or Dunn post hoc test.}
+\analysis{5}{Two categorical variables}{Is a high cappuccino price (above the median, 83 CZK) related to being in Prague 1?}{the two are independent.}{they are associated.}{chi-square test, Cram\'er's $V$, standardised residuals.}
+\analysis{6}{Correlation}{Does popularity fall with the distance from the Orloj?}{$\rho=0$.}{$\rho<0$ (one-tailed).}{Pearson on $\log(\text{ratings}+1)$, Spearman and Kendall coefficients, bootstrap confidence interval.}
+\analysis{7}{Simple regression}{By what percentage does the number of ratings change per kilometre?}{the slope is zero.}{the slope is not zero.}{simple regression of log ratings on distance (log-linear), residual plots, robust standard errors. With the outcome in logs, $e^{b}-1$ gives the percentage change per kilometre, and the statement needs a sentence on what the data can and cannot say about why.}
+\analysis{8}{Multiple regression}{Does the distance slope change once caf\'e type is in the model?}{caf\'e type adds nothing.}{caf\'e type improves the model.}{multiple regression of log ratings on distance and type, nested $F$-test, variance inflation factors.}
+\analysis{9}{Interaction}{Does popularity fall with the distance from the Orloj in the same way for caf\'es with and without outdoor seating?}{the interaction coefficient is zero, so the distance slope is the same in both groups.}{the interaction coefficient is not zero.}{multiple regression of $\log(\text{ratings}+1)$ on distance, an outdoor-seating indicator and their interaction, nested $F$-test against the model without the interaction, the distance slope in each group with its confidence interval, plot of the fitted lines.}
+\analysis{10}{Logistic regression}{By how many percentage points does the probability of having more than the median number of Google ratings (454) change with each kilometre from the Orloj?}{the distance coefficient is zero.}{the distance coefficient is not zero.}{logit of the indicator on distance and caf\'e type, average marginal effect of distance in percentage points, predicted-probability plot.}
+
+\section{Deliverables and grading}
+
+This part of the semester project, the analysis and its presentation, is worth 15 points, divided equally among three components. The other parts of the semester project, the data collection, which is completed, and the results defense, are graded separately. 5 points are awarded for the R code, which consists of three scripts that are run in this order: \texttt{01\_cleaning.R} turns the raw data file into the dataset for analysis; \texttt{02\_descriptives.R} reads that dataset and produces the description of the data and the checks of distributions and normality; \texttt{03\_tests.R} reads the same dataset and runs the tests and regressions, and exports for every one of the ten analyses at least one table and at least one figure. Together the scripts reproduce every number, table and figure in the report and the slides. 5 points are awarded for the \LaTeX\ report, written in the student's own words from the supplied template, which must contain tables and figures exported from R as described below. 5 points are awarded for the presentation of at least five slides, which lasts between ten and fifteen minutes and is spoken and not read.
+
+\subsection*{Tables and figures}
+
+R produces every table and figure of the report; nothing is typed or drawn by hand. For each of the ten analyses the scripts export at least one table and at least one figure as files, named by the analysis (for example \texttt{A2\_table.tex} and \texttt{A2\_figure.pdf}), into the folders \texttt{report/tables} and \texttt{report/figures}. The table gives the estimates with their confidence intervals, the effect size, the test statistic with its degrees of freedom and the $p$-value. The figure shows the data together with the estimate and its confidence interval. Every table and every figure in the report has a caption, which is added in the \LaTeX\ source around the exported file, not inside the R output. This is a minimum: the description of the data, the diagnostics and the robustness checks add further tables and figures. The main text of the report includes the key figure of each analysis and one summary table of the main results of all ten analyses, and the remaining files appear in the appendices.
+
+\subsection*{Report}
+
+The report has no page limit. It must contain everything a reader needs to understand what was done: the data and the cleaning steps, the methods, the results and their interpretation, and the limits of the analysis, so that the reader can follow the work without opening the code. The main text carries only the main results: for each analysis the estimate with its confidence interval, the effect size, the test supporting the interpretation, one key figure and the interpretation. Everything that checks or supports these results goes into the appendices and is cited from the main text. This includes the full descriptive statistics, the distribution and normality checks, the regression diagnostics, the alternative tests and robustness analyses, the full post hoc tables, and the details of the reproducibility information.
+
+\subsection*{Grading criteria}
+
+The R code is graded on whether it runs without errors from the raw data file through the three scripts in order on a fresh copy of the repository, whether every cleaning and analysis step is done in code and none by hand, whether the scripts are organised in commented blocks, one for each analysis, so that a reader can find any result, whether paths are relative and random procedures use a stated seed, and whether the exported tables and figures are the ones used in the report. The report is graded on whether a reader can understand what was done without seeing the code, whether hypotheses, estimates, confidence intervals, effect sizes and test statistics are reported in the format of the reporting standards, whether the interpretation is correct and stated in the units of the data, whether the main text is separated from the appendices as described, whether every table and figure is captioned and cited, and whether the limits of the analysis are stated. The presentation is graded on whether it concentrates on the findings and their interpretation, names the test that supports each finding, is spoken and not read, uses at least five slides, and keeps to the time of ten to fifteen minutes.
+
+\subsection*{Distribution of points}
+
+The 5 points for the R code are distributed as follows: 1.5 points for code that runs without errors from the raw file through the three scripts in order; 1 point for cleaning that is complete, done in code, and recorded decision by decision; 1.5 points for the ten analyses using the specified methods, each in its own commented block; 0.5 points for tables and figures exported by script and matching the report; and 0.5 points for relative paths, stated seeds and a readable structure. The 5 points for the report are distributed as follows: 1 point for a clear account of what was done, covering the data, the cleaning and the methods; 1 point for numbers reported in the required format, with confidence intervals, effect sizes and test statistics; 1.5 points for a correct interpretation stated in the units of the data; 1 point for the separation of main text and appendices and for captioned tables and figures; and 0.5 points for the limits of the analysis and the labelling of exploratory results. The 5 points for the presentation are distributed as follows: 2 points for findings and interpretations that are clear and correct; 1 point for naming the supporting test of each finding together with a good plot or estimate; 1 point for delivery, meaning that the talk is spoken and not read and that the findings are shared fairly between the two students; 0.5 points for at least five slides and a length of ten to fifteen minutes; and 0.5 points for the quality of the slides. The correctness of the analysis is examined mainly in the results defense, so these points reward completeness and sound reporting.
+
+\subsection*{Repository}
+
+Cooperation within a batch does not extend to the submission: each student creates their own GitHub repository, which contains their own code and their own report, and submits its link to the lecturer. Two students of the same batch never share a repository. The repository is organised in three folders. The folder \texttt{analysis} contains the raw data file, the three scripts and the cleaned dataset that the first script produces. The folder \texttt{report} contains the \LaTeX\ source, the compiled PDF, and the tables and figures that the scripts export. The folder \texttt{presentation} contains the slides, as a PDF and in their source format. All paths in the scripts are relative to the repository, so that the whole analysis can be reproduced after cloning it, and no file is uploaded that the scripts cannot regenerate, apart from the raw data.
+
+\subsection*{Presentation}
+
+The presentation is about the findings and not about the procedure. Each of the two students presents about half of the findings of the batch, and the pair decides how they are divided. For every finding the speaker shows the key plot or estimate with its confidence interval and effect size, states the interpretation in plain words, and names the test that supports it. The details of the tests (assumptions, alternatives, how the statistic is computed) are not presented; they are examined in the results defense.
+
+\end{document}
