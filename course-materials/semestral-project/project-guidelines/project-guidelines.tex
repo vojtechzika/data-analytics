@@ -1,0 +1,338 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{projectstyle}
+\usepackage{longtable,pdflscape,array,ragged2e}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.8em plus 0.2em minus 0.1em}
+
+% \analysis{number}{label}{question}{null}{alternative}{methods}
+\newcommand{\analysis}[6]{%
+  \par\smallskip\noindent\textbf{A#1\enspace #2.}\enspace #3\enspace
+  \Ho: #4\enspace \Hone: #5\enspace \textit{Methods:} #6\par}
+\title{\textbf{Semester Project: Data Analysis}\\[0.4ex]\large The Prague caf\'e data: overview, research questions and analysis checklist}
+\author{Data Analytics}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent This document describes the data analysis part of the semester project. You analyse data on caf\'es in Prague: the prices of four coffees, the Google rating and number of ratings, seating, the distance from the Orloj, the district and the caf\'e type. You work in a team that is assigned one topic of research questions. Each topic has its own questions, answered with the same basic methods. You submit your R scripts and a \LaTeX\ report, and you give a presentation of 10 to 15 minutes.
+\end{abstract}
+
+\clearpage
+\tableofcontents
+
+\clearpage
+
+\section*{Project Overview}
+The semester project is worth 50 percentage points of your grade and has three stages:
+
+\begin{itemize}
+	\item \textbf{Data Collection} (20~pp). You collect real-world data on coffee prices in Prague. See \hyperref[sec:collection]{\textcolor{blue}{Section~\ref*{sec:collection}}}.
+	\item \textbf{Data Analysis} (15~pp). You clean, describe and analyse the collected data, and report your findings in a written report and a presentation. See \hyperref[sec:analysis]{\textcolor{blue}{Section~\ref*{sec:analysis}}}.
+	\item \textbf{Analysis Defense} (15~pp). You show that you understand the analysis you submitted. See \hyperref[sec:defense]{\textcolor{blue}{Section~\ref*{sec:defense}}}.
+\end{itemize}
+
+The project requires R and RStudio, GitHub and \LaTeX\ (for both typesetting and presentation), so you will need to become familiar with them along the way.
+
+The syllabus expects 2 hours of work outside class for every class hour, which makes 84 hours per semester. As the project is worth 50~pp of your grade, plan for about 40 hours of work, roughly one full working week.
+
+\clearpage
+\section{Data Collection}\label{sec:collection}
+The semestral project starts with a data collection you are going to do. It is worth 20~pp of your grade. 
+
+In class, the lecturer shares a Google Drive folder with you. It contains the \texttt{Data Collection Sheet} file, where you record the data for each caf\'e, and a folder called \texttt{Photos}. \textbf{Do all of the work in this shared folder and not in your personal Drive.}
+
+\subsection*{Instructions}
+
+\begin{itemize}
+\item Each of you must collect 20 unique places in Prague -- coordinate the locations between yourselves so you don't end up with the same spots, duplicates do not count.
+\item Prefer caf\'es, not restaurants that make coffee.
+\item Only 2 of the 20 can be an international chain such as Starbucks, Costa, etc.
+\item Introduce yourself, inform staff what you are doing.
+\item Collect the data in person, during your visit. Prices and seating are taken at the caf\'e, not from websites or other sources, and no value may be invented or copied from another student. Data that turn out to be invented or copied result in zero points for the data collection.
+\item The sheet is shared by the whole class: add each caf\'e as a new row at the bottom, do not sort the sheet and do not change the rows of other students.
+\item In the \texttt{Photos} folder, create a subfolder named with your name and surname, and upload into it one picture per caf\'e that captures the caf\'e's menu or menu board, with the prices clearly legible. Link each picture in the row of that caf\'e in the sheet (field \emph{Photo Link}).
+\item Finish the data collection by the last day of the 4th week of the semester, unless stated otherwise.
+\end{itemize}
+
+How to introduce yourself at a caf\'e and how to fill in each field of the collection sheet are described in \hyperref[sec:collectiondetails]{\textcolor{blue}{Appendix~\ref*{sec:collectiondetails}}}.
+
+\clearpage
+\section{Data Analysis}\label{sec:analysis}
+
+In this part of the project, you analyse the data on your own. It is worth 15~pp of your grade.  You will:
+
+\begin{itemize}
+	\item clean the data (see \hyperref[sec:rules]{\textcolor{blue}{subsection~\ref*{sec:rules}}}),
+	\item analyse the data according to the research questions assigned to your team (see \hyperref[sec:batches]{\textcolor{blue}{Appendix~\ref*{sec:batches}}}),
+	\item write a report on your findings (see \hyperref[sec:report]{\textcolor{blue}{subsection~\ref*{sec:report}}}),
+	\item present your findings (see \hyperref[sec:presentation]{\textcolor{blue}{subsection~\ref*{sec:presentation}}}).
+\end{itemize}
+
+The analysis is individual work that you do within a team. The lecturer announces the size of the teams (typically 1 to 3 students) and you form your team yourselves. The lecturer then assigns each team one topic of research questions (see \hyperref[sec:batches]{\textcolor{blue}{Appendix~\ref*{sec:batches}}}). Within the team you may discuss and cooperate on everything, but each of you submits your own complete version: your own cleaning and analysis scripts, your own report and your own GitHub repository. The presentation is the only shared part. It presents the findings of all your assigned research questions, so each team member presents a share of them, and you decide the division among yourselves.
+
+Your understanding of your work will be checked during the defense (see \hyperref[sec:defense]{\textcolor{blue}{Section~\ref*{sec:defense}}}), where I may ask you about any part of it, including the parts that you did not present. You may use AI as much as you want, but treat it as a learning aid that helps you handle and understand everything, not as something that does the work for you without your understanding it.
+
+\subsection{Data cleaning}\label{sec:rules}
+
+The data have the structure described in \hyperref[sec:collectiondetails]{\textcolor{blue}{Appendix~\ref*{sec:collectiondetails}}}: each row is one caf\'e and each column is one field of the \texttt{Data Collection Sheet}. The file also contains the distance from the Orloj (the astronomical clock in the centre of Prague) in kilometres, which has already been calculated from the coordinates, so you do not compute it yourself. 
+As the data were collected by different people and entered by hand, labels and formats are not uniform and some cells contain more than one value.
+
+Download the raw data file from the Google Drive in CSV format. Clean it in a single R script called \texttt{01\_cleaning.R}. The script reads the raw file, which you do not edit by hand, performs every cleaning step in code and writes the cleaned data set as \texttt{dataset.csv}. This file is the only data set that the later scripts read. The cleaning follows the logic from class, which is set out in \hyperref[sec:chk-cleaning]{\textcolor{blue}{Appendix~\ref*{sec:chk-cleaning}}}.
+
+\subsection{Analysis}\label{sec:general}
+
+The analysis has two stages, each in its own R script that reads \texttt{dataset.csv}, the product of \texttt{01\_cleaning.R}. In \texttt{02\_descriptive.R} you describe the data and decide which tests to use. In \texttt{03\_analysis.R} you answer the research questions of your assigned topic.
+
+The goal of the descriptive analysis is one table that shows, for every variable you use in your analyses (and for each group where groups are compared), whether it can be analysed with a parametric or a non-parametric test. The steps to follow are listed in \hyperref[sec:chk-description]{\textcolor{blue}{Appendix~\ref*{sec:chk-description}}}.
+
+In the main analysis, go through each research question in this order:
+
+\begin{enumerate}
+	\item \textbf{State the hypotheses.} Write \Ho\ and \Hone\ for the research question at the very start, before you clean or look at the data, so that the data cannot influence them. Use a one-tailed alternative only if the question asks about a specific direction (for example ``more'' or ``farther''), and a two-tailed one otherwise. If a benchmark is given in US dollars, convert it to CZK and state the exchange rate you used.
+	\item \textbf{Decide between the parametric and the non-parametric method} based on the table produced in the descriptive analysis, and report that method only.
+	\item \textbf{Check the other assumptions of the method you chose}, and report the result of each check and what you did about it. For example, test the equality of variances when you compare groups (and use Welch's test, with Games--Howell for pairwise comparisons, if it fails), check the expected counts in a contingency table (and use Fisher's exact test if any is below 5), and for a regression inspect the residuals and the influential observations (with robust standard errors if the variance is not constant). Caf\'es in the same district are not independent, so say how this could affect the result of every method that assumes independence. If a test fails its assumptions and you know no alternative, or the alternative is too difficult (typically for linear models), run the method anyway and discuss in the interpretation how the violated assumptions affect the result.
+	\item \textbf{Run the test.} For example, take the question ``Do roasteries charge more for an espresso than other caf\'es?'' The hypotheses are \Ho: the mean espresso price is the same in roasteries and in other caf\'es, and \Hone: it is higher in roasteries (one-tailed). If the descriptive table supports a parametric test, run Welch's $t$-test (\texttt{t.test()} in R), and otherwise the Wilcoxon rank-sum test (\texttt{wilcox.test()}). When you set the direction of a one-tailed alternative, check which group R treats as the first. Keep the estimate, its confidence interval, the test statistic and the $p$-value. Label anything that you did not plan in advance as exploratory, for example an extra test or a subgroup that you tried after seeing the data. This means that you say in the report that it was not planned, and that you treat its result as a lead for further work and not as a confirmed finding, because if you try many things, some results appear by chance.
+	\item \textbf{Produce the table and the figure} for the report, as described in the analysis checklist (see \hyperref[sec:chk-analysis]{\textcolor{blue}{Appendix~\ref*{sec:chk-analysis}}} and \hyperref[sec:chk-reporting]{\textcolor{blue}{\ref*{sec:chk-reporting}}}).
+	\item \textbf{Interpret the result.} State what the estimate means in the units of the data (CZK, km, percentage points) and whether an effect of that size matters in practice, not only whether it is significant. Do not make causal claims, because the data are observational. If the result is not significant, write that there is no evidence of a difference and not that there is no difference.
+\end{enumerate}
+
+Your grade does not depend on statistical significance. A clear null result with a good interpretation is a full answer.
+
+You can write the whole main analysis (tests, plots and table exports) in \texttt{03\_analysis.R}, in commented blocks with one block per question. Or you can keep interim scripts, for instance one per research question, and use \texttt{03\_analysis.R} as the main runner that calls them in order. In that case, running \texttt{03\_analysis.R} alone must reproduce the whole analysis.
+
+\subsection{Report}\label{sec:report}
+
+You write up the analysis in a report in \LaTeX, using the template and style in the folder \texttt{report-template}, which is in the same repository as this document. The report is written in your own words, and everything in it comes from your scripts. Your assigned topic is one chapter of the story told in \hyperref[sec:batches]{\textcolor{blue}{Appendix~\ref*{sec:batches}}}, so write the report as that story: what you asked, what you found and in what order, and how the results fit together, rather than as a list of tests. It ends with a short conclusion that answers the question of your chapter.
+
+The report has no page limit. It contains everything a reader needs to understand what you did, without your code: the data and cleaning, the methods, the results and their interpretation, and the limits of the analysis. The main text contains only the main results: for each analysis the hypotheses, the estimate with its confidence interval, the effect size, the supporting test, one key figure and the interpretation, plus one summary table of the main results of all ten analyses. Everything that checks or supports these results goes in the appendices and is referred to from the main text: the full descriptive statistics, the normality and central-limit checks, the checks of the other assumptions, the regression diagnostics and the full post hoc tables. How estimates, tests, tables and figures are reported is set out in the analysis checklist (see \hyperref[sec:chk-analysis]{\textcolor{blue}{Appendix~\ref*{sec:chk-analysis}}} and \hyperref[sec:chk-reporting]{\textcolor{blue}{\ref*{sec:chk-reporting}}}), which applies to every analysis.
+
+Produce every table and figure in R, and do not type or draw anything by hand. For each of the ten analyses, export at least one table and one figure, named by analysis (for example \texttt{A2\_table.tex} and \texttt{A2\_figure.pdf}), to \texttt{report/tables} and \texttt{report/figures}. The table gives the estimates with their confidence intervals, the effect size where one is required, the test statistic with its degrees of freedom and the $p$-value. The figure shows the data with the estimate and its confidence interval. Every table and figure has a caption, which you add in the \LaTeX\ source around the exported file and not in the R output. These are minimums: the descriptive analysis and the checks of assumptions add more. The descriptive table is exported as \texttt{D\_table.tex} and the descriptive plots as \texttt{D\_*.pdf}, to the same folders.
+
+\subsection{Presentation}\label{sec:presentation}
+
+The team presents its findings in a talk of 10 to 15 minutes. Each team member presents a share of the findings, and the team decides how to divide them. You speak freely and do not read from the slides or from notes. The slides are made in \LaTeX\ (for example with Beamer), and you upload them to the \texttt{presentation} folder of your repository (see \hyperref[sec:deliverables]{\textcolor{blue}{subsection~\ref*{sec:deliverables}}}) as a PDF and in their source format. They contain at least one slide per assigned research question, plus an introduction and a conclusion.
+Present the findings, not the procedure, and tell the story of your topic. For every finding show the key plot or estimate with its confidence interval and effect size, give the interpretation in plain words and name the test that supports it. Do not present the details of the tests (assumptions, alternatives, computation of the statistic).
+
+\subsection{Deliverables and grading}\label{sec:deliverables}
+
+The code, the report and the presentation are worth 5 points each, and each is graded all or nothing. The code earns its points if the three scripts run without errors, from the raw file and in order, on a fresh copy of your repository, and together produce all the materials they should, including every number, table and figure in your report and slides. The report earns its points if it is in \LaTeX\ and contains all the specified materials (see \hyperref[sec:report]{\textcolor{blue}{subsection~\ref*{sec:report}}}). The presentation earns its points if it meets the requirements in \hyperref[sec:presentation]{\textcolor{blue}{subsection~\ref*{sec:presentation}}}. Otherwise the component earns 0 points.
+
+To receive any points, upload all the materials (the scripts, the report and the presentation) to your own GitHub repository at least one day before the presentation and send the link to the lecturer. You do not share a repository with your teammates. The repository has three folders. The folder \texttt{analysis} holds the raw data, the scripts (including the interim scripts, if you use them) and the cleaned data set \texttt{dataset.csv}. The folder \texttt{report} holds the \LaTeX\ source, the PDF and the exported tables and figures. The folder \texttt{presentation} holds the slides as a PDF and in their source format. Use paths relative to the repository, so that the analysis can be reproduced after cloning it. Apart from the raw data, do not upload any file that the scripts cannot regenerate. A possible structure of the repository:
+
+\begin{minipage}{\linewidth}
+\footnotesize
+\begin{verbatim}
+repository/
+|-- analysis/
+|   |-- raw_data.csv
+|   |-- 01_cleaning.R
+|   |-- 02_descriptive.R
+|   |-- 03_analysis.R
+|   |-- interim/         (optional: e.g. A1.R, A2.R, ...)
+|   `-- dataset.csv
+|-- report/
+|   |-- report.tex
+|   |-- report.pdf
+|   |-- tables/          (e.g. D_table.tex, A1_table.tex, ...)
+|   `-- figures/         (e.g. D_histograms.pdf, A1_figure.pdf, ...)
+`-- presentation/
+    |-- slides.tex
+    `-- slides.pdf
+\end{verbatim}
+\end{minipage}
+
+\clearpage
+\section{Analysis Defense}\label{sec:defense}
+
+The analysis defense is worth 15~pp. It takes place in class and it is an oral examination in which you show that you understand the analysis you submitted. It is based on your own work, and each of you is examined individually, also when you worked on the same questions with your teammates.
+
+The lecturer gives you a part of your own work, for example an excerpt of your code or a table or a figure from your report, and asks you questions about it. You should be able to explain every line of your scripts and every decision in them: how you cleaned the data and what each cleaning step changes, why you chose each test, which assumptions it makes and how you checked them. You should also be able to explain every number in your report, including the confidence intervals, the effect sizes and the $p$-values, and to interpret them in the units of the data without claiming more than the data support. The questions are of the same kinds for everybody, for example: what does this code do, why did you use this test and not another, what would change if this assumption failed, how do you interpret this result.
+
+If you answer the questions well, you receive the full points and you may leave. The lecturer keeps those who struggle for further questions, which start at a more basic level, so that you can show what you do understand. Being asked further questions is not a penalty in itself. The points are given according to what you are able to explain:
+
+\begin{itemize}
+	\item \textbf{15~pp:} you explain what your work does and means, and why you made your choices, including the method and its assumptions, and you answer the follow-up questions.
+	\item \textbf{10~pp:} you explain what your work does and says, but you are unsure about why, or you need prompting.
+	\item \textbf{5~pp:} you can describe your work, but you cannot explain the reasoning behind it.
+	\item \textbf{0~pp:} you cannot explain your own work.
+\end{itemize}
+
+\appendix
+\clearpage
+\section{Data collection details}\label{sec:collectiondetails}
+
+\subsection*{Introduce yourself!}
+
+\begin{itemize}
+\item Before collecting data at each caf\'e, briefly introduce yourself to a staff member and explain that you're a university student collecting publicly available information (prices, seating, and similar details) for a data analytics course assignment -- not a mystery shopper, journalist, or inspector, and not there to critique the business.
+\item Ask before photographing the menu or price board, and never photograph other customers or staff.
+\item Keep the interaction short and don't take up staff time during a busy rush; if a caf\'e is clearly slammed, come back later or move on to another location rather than pushing.
+\item You are not obligated to make a purchase to collect this data.
+\item If staff would rather you not collect data there, thank them and leave -- respect the decision and pick a different caf\'e rather than arguing or persisting.
+\item Throughout, be polite, honest about what you're doing and why, and remember that how you behave reflects on both you and the university, since these are real small businesses being asked for a small favor, not test subjects.
+\end{itemize}
+
+You can use, for instance, this:
+\begin{quote}
+\itshape ``Hi, I'm a university student working on a class project for my Data Analytics course. We're collecting some publicly available information about caf\'es around Prague -- things like drink prices and seating -- it'll just take a minute, and I wanted to let you know before I look around and note a few things. Is that okay?''
+\end{quote}
+
+\subsection*{How to fill the sheet}
+
+\begin{description}
+\item[Your Name] Full name as enrolled, so rows can be matched to the right student.
+\item[Date and time of visit] Date and local time you were actually there, in a consistent format (M/D/YYYY H:MM). Matters for spotting outliers and confirming coverage.
+\item[District (number)] The official Prague district (e.g.\ ``Prague 2''), not the postal code.
+\item[District (name)] The commonly used neighborhood name (e.g.\ ``Vinohrady''), not a restatement of the number.
+\item[Caf\'e name] As shown on the caf\'e's signage or its Google Maps listing.
+\item[Caf\'e address (Google Maps)] Full address exactly as Google Maps displays it.
+\item[Coordinates] Find the place on Google Maps. Right-click the pin, then click the coordinates that appear at the top of the menu (auto-copies). Paste as-is, one cell, comma-separated.
+\item[Link to GMaps] Share $\rightarrow$ ``Copy link,'' not ``Embed a map.''
+\item[Espresso / Cappuccino / Flat White / Filter-Batch Price in CZK (dine-in)] Dine-in price only, as listed on the menu or POS display. The Filter-Batch Price is the price of a filter coffee, which the research questions call the filter coffee price. If the caf\'e doesn't serve that drink, write NA -- never 0 or a blank cell, since those would look like ``free'' or ``forgot to check.''
+\item[Payment] Exactly one of: Cash only / Card only / Cash \& Card (use the dropdown, don't free-type).
+\item[Seating Places Inside / Outside] Count individual seats, not tables. Write 0 if there genuinely are none -- don't leave blank. Ideally, ask the staff.
+\item[Rating (Google) / Number of ratings (Google)] Copied directly from the caf\'e's Maps listing at the time of your visit.
+\item[Caf\'e Type] Exactly one of:
+  \begin{itemize}
+  \item Independent: single, standalone location; no other branches under that name anywhere.
+  \item Local chain: 2+ locations, all within Czech Republic.
+  \item International chain: 2+ locations, present in more than one country.
+  \end{itemize}
+  Ideally, ask the staff. Alternatively, check via Google Maps or the caf\'e's website/Instagram: if multiple pins/locations show up under the same brand, it's a chain. Use the dropdown, don't free-type.
+\item[Is Roastery (0/1)] 1 if it roasts its own beans on-site or is branded as a roastery, 0 otherwise. Always fill this in --- 0 is a real answer, not ``unknown.''
+\item[Photo Link] Link to the photo of the menu/price board that you uploaded to your subfolder in the shared \texttt{Photos} folder, as backup evidence for your prices.
+\item[Note] Free text for anything that affects how your data should be read (e.g.\ ``no regular milk, oat milk only'' -- explains why a price might not be directly comparable).
+\end{description}
+
+\clearpage
+\section{Analysis checklist}\label{sec:reporting}
+
+\subsection{Cleaning}\label{sec:chk-cleaning}
+
+The cleaning is done in the first script, \texttt{01\_cleaning.R}, and follows the logic from class:
+
+\begin{itemize}
+	\item \textbf{Inspect before you change anything.} Look at the structure of the data and at the type R gives each column: a column that should be numeric but is stored as text contains non-numeric values. Count the missing values in every column and check for empty rows and duplicated rows. Before you delete duplicates, check that they are really repeated entries and not different caf\'es that happen to look alike.
+	\item \textbf{Look at the categories.} List the actual values of every categorical variable (district, caf\'e type, payment) to catch typos, capital letters, stray spaces, inconsistent spellings and entries that combine two categories. Harmonise the labels, for example ``prague 1'' and ``prauge 1'', and set a blank caf\'e type to missing.
+	\item \textbf{Make explicit decisions where the data do not tell you what to do.} A cell with several prices (for example ``85, 95, 105'' or ``65/40'') or an entry that combines two categories has no obvious answer. Set it to missing or take the first listed value, and both can be defended. By default use the first listed price. A missing price (NA) means that the caf\'e does not serve that drink, so decide what that implies for your variables, for example that a caf\'e with no filter coffee price does not offer filter coffee. Decide, apply the decision in code and be ready to justify it, because a different reasonable choice can change the results.
+	\item \textbf{Convert text to numbers with care.} A column that should be numeric is sometimes stored as text, for example the number of ratings written with a thousands separator. Before you convert, list all values that contain anything other than digits and a decimal point, confirm what the problem is and only then remove it. Afterwards print the same rows again and check visually that the conversion did what you intended. A mistake here makes every later result wrong.
+	\item \textbf{Create the variables your questions need.} Some questions use variables that are not in the sheet, for example the Adjusted Rating, the Price Level, indicators such as Prague 1, outdoor seating or ``above the median'', and the distance east--west and north--south from the Orloj. The coordinates are stored in one cell, so split them into latitude and longitude first. Define each new variable exactly as the question does, compute thresholds such as the median in code and never type them in.
+	\item \textbf{Never overwrite the original.} Create a new column for each recoded or converted variable, compare it with the original, and keep the original until the check is done. Missing values stay missing (NA): never replace them by 0.
+	\item \textbf{Check the result.} Compare the number of rows before and after, count the missing values again, and look at the range of every variable you will use, for example ratings between 1 and 5 and prices that are positive and plausible in crowns. Write the cleaned data without row numbers.
+\end{itemize}
+
+In your report, list the choices you made while cleaning, for example which price you kept when a cell had several.
+
+\subsection{Description}\label{sec:chk-description}
+
+Do the description in the second script, \texttt{02\_descriptive.R}, before you run any test. Its goal is one table that shows, for every variable you use in your analyses and for each group where groups are compared, whether it can be analysed with a parametric or a non-parametric test. A group is any set of caf\'es that one of your questions compares, for example roasteries and other caf\'es, or the three caf\'e types. For every variable:
+
+\begin{enumerate}
+	\item \textbf{Count.} Report the number of observations and of missing values.
+	\item \textbf{Summarise.} For numeric variables report the mean, standard deviation, median, interquartile range and range, and for categorical variables the counts and percentages.
+	\item \textbf{Plot it.} Draw a histogram or density plot and a boxplot of every numeric variable. Where groups are compared, draw the groups side by side, and for a paired comparison plot the differences.
+	\item \textbf{Check normality.} Judge it from the histogram, the normal Q--Q plot and the skewness, within each group that is compared (and for the differences in a paired test). The Shapiro--Wilk test is optional and does not override the plots, because it has little power in small samples and flags unimportant deviations in large ones. Categorical variables need no such check. The residuals of a regression can only be checked after the model is fitted, so they belong to the main analysis.
+	\item \textbf{If normality is not met, check whether the central limit theorem helps.} The mean of a large enough sample is approximately normal even when the variable is not. Look at the number of observations in each group (as a rule of thumb about 30; what counts is the smallest group, not the size of the whole sample) and check the distribution of bootstrapped means (at least 5{,}000 resamples, seed stated). A small group is not rescued by the theorem.
+	\item \textbf{Fill in the table.} Give one row per variable, and per group where groups are compared, with the number of observations, the result of the normality check, whether the central limit theorem applies, and the conclusion. Export it from the script as \texttt{D\_table.tex}, and export the descriptive plots as \texttt{D\_*.pdf}, to \texttt{report/tables} and \texttt{report/figures}. A parametric test is justified if the variable is normal or the central limit theorem applies, and otherwise a non-parametric test is needed.
+	\item \textbf{Report it.} Summarise the description in the data section of the report and give it in full in an appendix: the descriptive statistics, the histograms, the Q--Q plots and the normality and central-limit checks. The main text refers to the conclusions in the table. For each question, state whether you use the parametric or the non-parametric method.
+\end{enumerate}
+
+\subsection{Analysis}\label{sec:chk-analysis}
+
+\subsubsection*{One sample}
+
+Report every mean with its 95\% confidence interval and its sample size, for example \meanci{82.4}{79.8}{85.0}{CZK}, $n=312$. Give the standard deviation in the descriptive table. For skewed variables report the median and interquartile range next to the mean. Where the plots suggest that the normal approximation is doubtful, use a bootstrap confidence interval (percentile, at least 5{,}000 resamples, seed stated) instead of the $t$-based interval. Show confidence intervals in the figures as well as in the text.
+
+\subsubsection*{Two groups and paired data}
+
+State the direction of the subtraction in words (``Prague 1 minus the rest''). Report the difference with its 95\% confidence interval. For a $t$-test also report Cohen's $d$, and for paired data $d_z$, which is the mean difference divided by the standard deviation of the differences. Example: a difference of 4.1~CZK, \CI{1.2}{7.0}, $d=0.31$. You may mention Cohen's benchmarks (0.2, 0.5, 0.8) once, but they do not replace an interpretation in crowns. For a one-tailed alternative, still show the two-sided interval and state that the $p$-value is one-tailed and was fixed in advance. No effect size is required for a rank test.
+
+\subsubsection*{More groups}
+
+Report Welch's $F(df_1,df_2)$ or the Kruskal--Wallis $H(df)$. No effect size is required. Follow a significant result with pairwise comparisons (Tukey, Games--Howell, or Dunn with Holm adjustment) and give for each pair the mean difference, the adjusted $p$-value and the confidence interval. Show the group means with their confidence intervals in one figure.
+
+\subsubsection*{Two categorical}
+
+Report $\chi^2(df,N)$, the counts and row percentages, the smallest expected count, and Cram\'er's $V$. If any expected count is below 5, use Fisher's exact test. Standardised residuals above 2 in absolute value show which cells drive the association.
+
+\subsubsection*{Correlation}
+
+Show the scatterplot first. Report the coefficient with its 95\% confidence interval and $n$, for example $r=-.21$, \CI{-.30}{-.12}, and the squared coefficient as the share of shared variance. Use Pearson's $r$ if the descriptive analysis supports a parametric method and Spearman's $\rho$ otherwise, with a bootstrap confidence interval for $\rho$. The coefficient is itself the effect size. A correlation is not an effect, so do not suggest a cause.
+
+\subsubsection*{Simple and multiple regression}
+
+Export the regression table from R. It contains the number of observations, each coefficient with its standard error and 95\% confidence interval, and $R^2$. Use robust standard errors if the variance of the residuals is not constant. State the slope in units of the outcome per unit of the predictor. Inspect the residual-versus-fitted plot and the normal Q--Q plot, name influential observations and mention them in the interpretation if they matter. For a multiple regression, state how the slope of interest changed when the second predictor entered and whether it is still different from zero.
+
+\subsubsection*{Many tests and exploratory results}
+
+Adjust pairwise comparisons that answer one family of questions (for example all pairwise district comparisons) with Holm's method, or use a post hoc test that adjusts them itself. Label anything that you did not plan in advance as exploratory.
+
+\subsection{Reporting}\label{sec:chk-reporting}
+
+\subsubsection*{General conventions}
+
+Use $\alpha=.05$ and state it once in the methods section. Report test statistics with degrees of freedom, as in $t(df)$, $F(df_1,df_2)$ or $\chi^2(df,N)$. Give exact $p$-values to three decimals without a leading zero (\pr\,=\,.034), and write very small values as \plt{.001}. Round estimates and test statistics to two decimals and prices to one decimal. Give every estimate its unit (CZK, km, rating points). Report every number with the sample size it is based on, and state for each analysis how many caf\'es were lost to missing values. The numbers in the examples in this appendix are invented.
+
+Report a result as an estimate, its uncertainty and, where one is required, its effect size, in this order, and only then as a test. Say what the estimate means in the units of the data and whether a difference of that size is practically relevant.
+
+\subsubsection*{Figures, tables and interpretation}
+
+Every figure shows the data (points, distribution or both) with the estimate and its confidence interval, has labelled axes with units and has a caption that can be understood without the text. Every table has a caption too. Produce tables with the R script and include them with \verb|\input|. Do not type them by hand, and use \texttt{booktabs} rules. The discussion covers three limits: the sample is a convenience sample and not a random sample of Prague caf\'es, the data are observational, and prices of caf\'es in the same district are not independent. Write ``in this sample'' unless you can defend a wider claim.
+
+\clearpage
+\begin{landscape}
+\newcommand{\AR}{Adjusted Rating\textsuperscript{*}}
+\newcommand{\PL}{Price Level\textsuperscript{**}}
+\section{Research questions}\label{sec:batches}
+
+The five topics are chapters of one story about the Prague caf\'e market: what caf\'es charge (Price), where they are (Location), how well they are rated (Rating), how big they are (Caf\'e Size) and what the specialty caf\'es offer (Speciality Caf\'es). Your topic is one column of the table below, and the lecturer assigns it to your team. Each topic has ten analyses, A1 to A10, one per row, and the rows use the same method in every topic, from a single mean to logistic regression with marginal effects. Within a column the analyses are the steps of the story. The methods are those you are expected to use, and the analysis checklist in \hyperref[sec:reporting]{\textcolor{blue}{Appendix~\ref*{sec:reporting}}} applies to all of them. Some questions use variables that you create in \texttt{01\_cleaning.R}.
+
+{\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{@{}>{\RaggedRight\arraybackslash}p{3.0cm}*{5}{>{\RaggedRight\arraybackslash}p{3.85cm}}@{}}
+\toprule
+\textbf{Method} & \textbf{Price} & \textbf{Location} & \textbf{Rating} & \textbf{Caf\'e Size} & \textbf{Speciality Caf\'es} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Method} & \textbf{Price} & \textbf{Location} & \textbf{Rating} & \textbf{Caf\'e Size} & \textbf{Speciality Caf\'es} \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+\textbf{1}\enspace One sample & Is the average price of an espresso in Prague different from 3 US dollars? & Is the average distance of caf\'es from the Orloj different from 2 km? & Is the average Google rating of Prague caf\'es different from 4.5? & Is the average number of seats inside a caf\'e different from 30? & Is the average price of a filter coffee different from 4 US dollars? \\
+\midrule[\lightrulewidth]
+\textbf{2}\enspace Two groups & Do roasteries charge more for an espresso than other caf\'es? & Are roasteries farther from the Orloj than other caf\'es? & Do caf\'es with an above-median number of ratings have lower Google ratings than caf\'es with a below-median number? & Do caf\'es with outdoor seating have more seats inside than caf\'es without? & Do caf\'es that offer filter coffee charge more for an espresso than caf\'es that don't? \\
+\midrule[\lightrulewidth]
+\textbf{3}\enspace Two groups, Paired & How much more does a flat white cost than a cappuccino in the same caf\'e? & Are caf\'es spread farther east--west (longitude) than north--south (latitude) from the Orloj\textsuperscript{***}? & Is the \AR{} different from the raw rating, and if so, by how much? & How many more seats does a caf\'e have inside than outside? & How much more does a filter coffee cost than an espresso in the same caf\'e? \\
+\midrule[\lightrulewidth]
+\textbf{4}\enspace More groups & Does the price of a cappuccino differ by Caf\'e Type (independent, local chain, international chain) and if so, how? & Does the distance from the Orloj differ by Caf\'e Type (independent, local chain, international chain), and if so, how? & Does the Google rating differ between caf\'es with few (under 100), medium (100--1,000) and many (over 1,000) ratings, and if so, how? & Does the number of outdoor seats differ between districts (Prague 1, 2, 3, 5, 7, 8), and if so, how? & Does the espresso price differ between caf\'es with none, one or both specialty features (roastery, filter coffee), and if so, how? \\
+\midrule[\lightrulewidth]
+\textbf{5}\enspace Two categorical & Is a flat white more likely to cost above the median price in Prague 1 than elsewhere, and if so, by how many percentage points? & Is an international chain more likely to be in Prague 1 than other caf\'e types, and if so, by how many percentage points? & Is a caf\'e with a below-median number of ratings more likely to be top-rated (4.7 or higher), and if so, by how many percentage points? & Is a small caf\'e (15 or fewer seats inside) more likely to be top-rated (4.7 or higher) than other caf\'es, and if so, by how many percentage points? & Is a roastery more likely to offer filter coffee than other caf\'es, and if so, by how many percentage points? \\
+\midrule[\lightrulewidth]
+\textbf{6}\enspace Correlation & Is the cappuccino price correlated with a caf\'e's \AR{}, and if so, in which direction and how strongly? & Is the number of Google ratings correlated with the distance from the Orloj, and if so, in which direction and how strongly? & Is the Google rating correlated with the number of ratings, and if so, in which direction and how strongly? & Is the \PL{} correlated with the number of seats inside, and if so, in which direction and how strongly? & Is the filter coffee price correlated with the espresso price, and if so, in which direction and how strongly? \\
+\midrule[\lightrulewidth]
+\textbf{7}\enspace Simple regression & By how many CZK does the cappuccino price change per point of \AR{}? & By how many ratings does the number of Google ratings change per km from the Orloj? & By how many points does the Google rating change per 1,000 ratings? & By how many CZK does the \PL{} change per 10 additional seats inside? & By how many CZK does the filter coffee price change per 10 CZK increase in the espresso price? \\
+\midrule[\lightrulewidth]
+\textbf{8}\enspace Multiple regression & Does the link between \AR{} and cappuccino price hold once you account for the espresso price, and if so, how much of it remains? & Does the link between distance from the Orloj and the number of ratings hold once you account for the number of seats inside, and if so, how much of it remains? & Does the rating differ by Caf\'e Type (independent, local chain, international chain) once you account for the number of ratings, and if so, how much of the difference remains? & Does the link between seats inside and the \PL{} hold once you account for the caf\'e's distance from the Orloj, and if so, how much of it remains? & Does the espresso price differ between caf\'es that offer filter coffee and those that don't once you account for the distance from the Orloj, and if so, how? \\
+\midrule[\lightrulewidth]
+\textbf{9}\enspace Regression with interaction & Does the relationship between \AR{} and cappuccino price differ between roasteries and other caf\'es, and if so, how? & Does the relationship between distance from the Orloj and the number of ratings differ between caf\'es east and west of the Orloj\textsuperscript{***}, and if so, how? & Does the relationship between raw and \AR{} differ between caf\'es with few (under 100) and many (100 or more) ratings, and if so, how? & Does the relationship between seats inside and the \PL{} differ between caf\'es with and without outdoor seating, and if so, how? & Does the relationship between the espresso price and the filter coffee price differ between independent caf\'es and chains, and if so, how? \\
+\midrule[\lightrulewidth]
+\textbf{10}\enspace Logistic regression with marginal effects & Is a flat white more likely to cost above the median price in better-rated caf\'es, and if so, by how many percentage points per 0.1 of \AR{}? & Does the probability that a caf\'e has an above-median number of ratings change with each additional km away from the Orloj, and if so, by how many percentage points? & Does the probability that a caf\'e is top-rated (4.7 or higher) change with each additional 1,000 ratings, and if so, by how many percentage points? & Does the probability of an above-median \PL{} change with each additional 10 seats inside, and if so, by how many percentage points? & Does the probability that a caf\'e offers filter coffee change with each additional km east of the Orloj\textsuperscript{***}, and if so, by how many percentage points? \\
+\midrule[\lightrulewidth]
+\end{longtable}
+}
+
+{\footnotesize
+\noindent\textsuperscript{*}\,Raw Google ratings are not comparable across caf\'es, because a rating based on only a few reviews is much less reliable than one based on thousands. A caf\'e with five ratings of 5.0 may simply have been lucky, while a caf\'e with two thousand ratings averaging 4.6 is a much more trustworthy measure of quality. To make the ratings comparable, you must use the Adjusted Rating, which you compute using this formula: $(n \times R + 50 \times C)\,/\,(n + 50)$, where $R$ is the caf\'e's Google rating, $n$ is its number of ratings and $C$ is the mean rating of all caf\'es. This technique is known as shrinkage (or a Bayesian average): it pulls each rating towards the average, and it pulls more strongly the fewer ratings the caf\'e has. For a caf\'e with many ratings, the adjusted rating is almost the same as the raw one.
+
+\noindent\textsuperscript{**}\,The Price Level of a caf\'e is the average of its espresso, cappuccino and flat white prices in CZK. A single drink says little about how expensive a caf\'e is, because a caf\'e may price one drink unusually, so we combine the three prices into one number that describes the caf\'e's pricing overall. You compute it only for caf\'es that have all three prices.
+
+\noindent\textsuperscript{***}\,The distance from the Orloj in the data is computed from the coordinates of the caf\'e, which are also in the data. To get the east--west and north--south distances, split the coordinates into latitude and longitude and take their difference from the Orloj, which lies at about 50.0871\textdegree{} N and 14.4207\textdegree{} E. At the latitude of Prague, one degree of latitude is about 111~km and one degree of longitude is about 71~km. Hence the north--south distance in km is $(\text{latitude}-50.0871)\times 111$ and the east--west distance in km is $(\text{longitude}-14.4207)\times 71$. A positive east--west value means east of the Orloj and a positive north--south value means north of it. For question A3, use the absolute values of the two distances.
+}
+\end{landscape}
+
+\end{document}
