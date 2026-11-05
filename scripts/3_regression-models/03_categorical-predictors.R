@@ -3,8 +3,8 @@
 # a categorical predictor in lm(): dummy variables, the two-group case
 # (= the t-test), the three-group case (= one-way ANOVA), the meaning of
 # the coefficients and of the reference group, changing the reference,
-# post hoc comparisons from the model, Welch / Kruskal-Wallis in their
-# regression form, a case with a real group difference, and independence
+# post hoc comparisons from the model, a case with a real group
+# difference, and a note on independence
 # ===================================================================
 
 source("scripts/00_setup.R")
@@ -47,7 +47,7 @@ df_three %>% count(urban_class)
 #
 # so this script is a RE-reading of 1_group-comparisons, not new theory.
 # and it prepares the next steps: once groups live INSIDE a regression,
-# they can be combined with other predictors (04 and 05)
+# they can be combined with other predictors (04 and 06)
 # ====
 
 
@@ -203,20 +203,10 @@ coef(fit_ref_urban)
 all.equal(fitted(fit_three), fitted(fit_ref_urban))   # TRUE: the same model
 c(F_rural_reference = summary(fit_three)$fstatistic[1], F_urban_reference = summary(fit_ref_urban)$fstatistic[1])
 
-# two more codings you will meet. (a) NO INTERCEPT, "0 +": each coefficient is
-# directly a group mean (handy for a table of means with their standard errors;
-# but the F-test and R^2 at the bottom then answer a different question -- do
-# NOT use them). (b) SUM-TO-ZERO ("effect") coding: the intercept is the mean of
-# the group means and each coefficient is a group's deviation from it. this is
-# what the Type III ANOVA of 05 needs
-coef(lm(cap_eur ~ 0 + urban_class, data = df_three))
-coef(lm(cap_eur ~ urban_class, data = df_three, contrasts = list(urban_class = "contr.sum")))
-
 # result: with Urban as the reference the coefficients become Rural +0.060 and
-# Suburban -0.036 (the differences from Urban); the no-intercept model returns
-# the three means 4.007, 3.911, 3.947 directly; the sum-to-zero intercept is
-# 3.955, the plain average of the three means (NOT the overall mean 3.94: the
-# groups are very unequal in size, and this one counts them equally)
+# Suburban -0.036 (the differences from Urban); the fitted values and
+# the F-test are identical. (other codings -- no intercept, sum-to-zero -- are in
+# 4_regression-advanced/02)
 
 
 ## POST HOC COMPARISONS FROM THE MODEL
@@ -243,28 +233,12 @@ TukeyHSD(aov(cap_eur ~ urban_class, data = df_three))   # the older base-R versi
 
 ## UNEQUAL VARIANCES AND RANKS, IN REGRESSION FORM
 # ====
-# Welch ANOVA (the answer to unequal variances, 03_three-sample.R) and the
-# Kruskal-Wallis test (the answer to skew and outliers) also have regression
-# forms:
-#   - ROBUST standard errors: Anova(model, white.adjust = "hc3") gives the
-#     omnibus F-test without assuming equal variances
-#   - a regression on RANKS: replace the outcome by rank(outcome) and fit
-#     the same model -- close to Kruskal-Wallis for large samples (the
-#     rank transformation is the idea behind both)
+# Welch ANOVA (unequal variances) and the Kruskal-Wallis test (skew, outliers)
+# also have regression forms: robust standard errors, and a regression on RANKS.
+# they give the same verdicts as the dedicated tests of 1_group-comparisons --
+# the named tests are variations of one idea. the code is in
+# 4_regression-advanced/02_model-theory-extras.R
 # ====
-
-oneway.test(cap_eur ~ urban_class, data = df_three)       # Welch ANOVA
-Anova(fit_three, white.adjust = "hc3")                    # robust F-test from the regression
-
-kruskal.test(cap_eur ~ urban_class, data = df_three)      # Kruskal-Wallis
-anova(lm(rank(cap_eur) ~ urban_class, data = df_three))   # ANOVA on the ranks
-
-# result: Welch F = 0.75 (p = 0.4725) and the robust regression F = 0.75 (p =
-# 0.4728): the same verdict to the third decimal. Kruskal-Wallis p = 0.5957
-# and the rank regression p = 0.5959: the same too. the lesson is not
-# "never use the named tests", it is that they are VARIATIONS of one idea --
-# fit the group-means model, then choose the standard error and the scale
-# (raw or ranks) that suit the data
 
 
 ## A CASE WITH A REAL DIFFERENCE: THE WAGE BY URBAN CLASS
@@ -293,7 +267,7 @@ pairs(emmeans(fit_wage, ~ urban_class), adjust = "tukey")
 # next scripts: urban places have LOWER wages but the SAME cappuccino prices
 # -- which means that, comparing places with the SAME wage, urban cappuccinos
 # are relatively dearer. that is a statement a model with two predictors can
-# make (05)
+# make (06)
 
 
 ## A NOTE ON INDEPENDENCE -- AGAIN
@@ -301,15 +275,12 @@ pairs(emmeans(fit_wage, ~ urban_class), adjust = "tukey")
 # as in 03_three-sample.R and 02: rows from the same city, and cities from the
 # same country, resemble each other, so the p-values above are too optimistic.
 # the regression form makes the remedy easy: swap in a cluster-robust
-# covariance matrix, exactly as in 02. here, for the omnibus F-test of the
-# price model, with whole countries as clusters:
+# covariance matrix, exactly as in 02. the omnibus F-test of the price model
+# with countries as clusters (it moves the already non-significant result even
+# further from significance, F = 0.38, p = 0.68) is in
+# 4_regression-advanced/01_clustered-inference.R. for the WAGE model the same
+# correction is much more consequential -- try it in the exercises
 # ====
-
-Anova(fit_three, vcov. = vcovCL(fit_three, cluster = df_three$country))
-
-# result: F = 0.38 (p = 0.68): clustering moves the already non-significant
-# result even further from significance. for the WAGE model the same
-# correction would be much more consequential -- try it in the exercises
 
 
 ## WHAT WE FOUND
@@ -323,8 +294,8 @@ Anova(fit_three, vcov. = vcovCL(fit_three, cluster = df_three$country))
 # - the price of a cappuccino does not differ by urban class (F = 0.63, p = 0.53,
 #   R^2 = 0.0005), consistent with 03_three-sample.R; the hourly wage does
 #   (F = 18.5, Urban lower than the others), although the effect is small
-# - post hoc tests (Tukey via emmeans) and the robust / rank versions give the
-#   same answers as the dedicated tests
+# - post hoc tests (Tukey via emmeans) give the same answers as the dedicated
+#   tests; so do the robust and rank versions (4_regression-advanced/02)
 # ====
 
 
@@ -335,9 +306,9 @@ Anova(fit_three, vcov. = vcovCL(fit_three, cluster = df_three$country))
 #   Welch t-test                             the same, with robust (HC3) standard errors
 #   one-way ANOVA, F-test                    lm(y ~ group); anova(fit) or the F at the bottom of summary()
 #   eta^2                                    R^2
-#   Welch ANOVA                              Anova(fit, white.adjust = "hc3")
+#   Welch ANOVA                              Anova(fit, white.adjust = "hc3")   [advanced 02]
 #   Tukey HSD                                pairs(emmeans(fit, ~ group), adjust = "tukey")
-#   Kruskal-Wallis                           lm(rank(y) ~ group), approximately
+#   Kruskal-Wallis                           lm(rank(y) ~ group), approximately   [advanced 02]
 #   group means with CIs                     emmeans(fit, ~ group)
 #
 # in a model with ONE categorical predictor there is nothing a regression can
@@ -361,6 +332,6 @@ Anova(fit_three, vcov. = vcovCL(fit_three, cluster = df_three$country))
 #    countries as the independent units? why might it not?
 # 5. fit lm(cap_index ~ urban_class) for the cappuccino index (filter out
 #    missing values first) and compare its F-test with the Kruskal-Wallis test
-#    of 03_three-sample.R, and the F-test of lm(rank(cap_index) ~ urban_class).
-#    which pair agrees better, and why?
+#    of 03_three-sample.R, and the F-test of lm(rank(cap_index) ~ urban_class)
+#    (a regression on ranks: see 4_regression-advanced/02). which pair agrees better, and why?
 # ====

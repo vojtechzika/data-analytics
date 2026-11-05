@@ -1,11 +1,11 @@
 # ===================================================================
 # 02_regression-diagnostics.R -- CAN WE TRUST THE LINE?
 # the assumptions of linear regression (LINE), residual plots (residuals
-# vs fitted, QQ, scale-location, leverage and Cook's distance), testing
+# vs fitted, QQ, leverage and Cook's distance), testing
 # for curvature, the log-log model and its interpretation, robust and
 # cluster-robust standard errors (the regression versions of Welch and of
-# "the rows are not independent"), a cluster bootstrap, and Anscombe's
-# quartet once more
+# "the rows are not independent").
+# (a cluster bootstrap and Anscombe's quartet are in 4_regression-advanced)
 # ===================================================================
 
 source("scripts/00_setup.R")
@@ -23,8 +23,6 @@ df_cont <- df_cap %>%
   mutate(urban_class = factor(urban_class, levels = c("Rural", "Suburban", "Urban")),
          country     = gsub(" ", " ", country),      # two country names contain a non-breaking space; see the note in 04
          city_id     = paste(country, city, sep = " / ")) # a city name alone is not unique (there are several Springfields)
-
-n_boot <- 2000   # same as in the previous scripts
 
 fit <- lm(cap_eur ~ wage_eur, data = df_cont)   # the model from 01_simple-regression.R
 coef(fit)
@@ -73,8 +71,8 @@ diag_df <- df_cont %>%
          leverage  = hatvalues(fit),
          cooks     = cooks.distance(fit))
 
-# the base-R shortcut: four standard plots at once (the same four we build
-# below with ggplot)
+# the base-R shortcut: four standard plots at once (we build three of them
+# below with ggplot; the fourth, scale-location, is in the advanced folder)
 par(mfrow = c(2, 2)); plot(fit); par(mfrow = c(1, 1))
 
 
@@ -125,34 +123,11 @@ ggplot(diag_df, aes(sample = std_resid)) +
 # heavier than they say. Shapiro-Wilk would "reject" immediately, as always
 # with this many rows: read the plot, not the p-value (see 0_introduction/05)
 
-
-## PLOT 3: SCALE-LOCATION -- EQUAL VARIANCE, SECOND LOOK
-# ====
-# the square root of the absolute standardized residuals against the fitted
-# values. a flat smoother = equal variance; a rising one = the spread grows
-# with the fitted value
-# ====
-
-ggplot(diag_df, aes(x = fitted, y = sqrt(abs(std_resid)))) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "loess", formula = y ~ x, se = FALSE, color = "#2a78d6") +
-  labs(x = "fitted price (EUR)", y = "sqrt(|standardized residual|)", title = "Scale-location") +
-  theme_minimal()
-
-# a formal test, the Breusch-Pagan test. H0: the variance is constant. a
-# SMALL p-value is the bad news (like Levene's test in the ANOVA script), and
-# like Levene's test it is very sensitive at this n -- read it together with
-# the plots
-bptest(fit)
-
-# result: BP = 5.5, p = 0.019 -- mild evidence of unequal variance. the
-# smoother in the plot rises on the right (the spread is largest for the
-# highest fitted prices) after a dip in the middle. the effect is small
-# enough that robust standard errors (below) will change the SE by about a
-# quarter, not by an order of magnitude
+# (another plot, scale-location, and the Breusch-Pagan test of equal variance are in
+# 4_regression-advanced/02_model-theory-extras.R)
 
 
-## PLOT 4: LEVERAGE AND COOK'S DISTANCE -- INFLUENTIAL ROWS
+## PLOT 3: LEVERAGE AND COOK'S DISTANCE -- INFLUENTIAL ROWS
 # ====
 # a row can be unusual in two ways: far from the other rows in x (HIGH
 # LEVERAGE: it has the power to tilt the line) or far from the line in y (a
@@ -278,9 +253,8 @@ rbind(all_rows = coef(fit_log), wages_at_least_2_eur = coef(fit_log_trim))
 # result: the elasticity moves from 0.232 to 0.223 without the wages below
 # 2 euros: the conclusion survives. the diagnostics are worth repeating for
 # the log model -- redo plots 1-3 with fit_log and see which problems went
-# away (the right skew largely did) and which did not (the Breusch-Pagan test
-# is now even more significant, BP = 26.3: with this n it flags small
-# differences; look at the plots)
+# away (the right skew largely did) and which did not (the spread still
+# grows with the wage: see the Breusch-Pagan test in 4_regression-advanced/02)
 
 
 ## UNEQUAL VARIANCE: ROBUST (HETEROSCEDASTICITY-CONSISTENT) STANDARD ERRORS
@@ -356,71 +330,10 @@ ggplot(se_table, aes(x = reorder(se_type, -se), y = slope)) +
 #
 # these are a correction of the STANDARD ERRORS only. a model that
 # represents the clustering itself (random intercepts for city / country) is
-# the topic of the mixed-model section of 05
-
-
-## THE CLUSTER BOOTSTRAP FOR THE SLOPE
-# ====
-# the same idea as in 2_associations, now for the slope: resample whole
-# COUNTRIES (with all their rows), refit the line, and keep the slope. the
-# percentile interval needs no formula
-# ====
-
-country_list <- split(df_cont, df_cont$country)
-
-set.seed(123)
-slope_boot <- replicate(n_boot, {
-  d <- do.call(rbind, country_list[sample(length(country_list), replace = TRUE)])
-  unname(coef(lm(cap_eur ~ wage_eur, data = d))[2])
-})
-
-rbind(naive_classic     = confint(fit)["wage_eur", ],
-      cluster_robust_se = c(se_table$lower[5], se_table$upper[5]),   # the "country" row of the table
-      cluster_bootstrap = quantile(slope_boot, c(0.025, 0.975)))
-
-# result: the country-cluster bootstrap gives 0.045 to 0.127, matching the
-# cluster-robust interval almost exactly: two independent routes, the same
-# honest answer -- somewhere between about 4 and 13 cents per euro of wage
-
-
-## ANSCOMBE'S QUARTET, ONCE MORE: THE SAME LINE, FOUR PICTURES
-# ====
-# in 2_associations the four Anscombe datasets had identical r. the regression
-# lines are identical too -- and so are R^2 and the residual standard error.
-# only the diagnostics tell them apart, which is exactly why this script
-# exists
-# ====
-
-anscombe_fits <- lapply(1:4, function(i) {
-  d <- data.frame(x = anscombe[[paste0("x", i)]], y = anscombe[[paste0("y", i)]])
-  f <- lm(y ~ x, data = d)
-  data.frame(set = paste("dataset", i), d,
-             intercept = unname(coef(f)[1]), slope = unname(coef(f)[2]), R2 = summary(f)$r.squared,
-             sigma = summary(f)$sigma,
-             fitted = unname(fitted(f)), resid = unname(residuals(f)),
-             leverage = unname(hatvalues(f)), cooks = unname(cooks.distance(f)))
-}) %>% bind_rows()
-
-anscombe_fits %>% distinct(set, intercept, slope, R2, sigma)   # four identical rows (up to rounding)
-
-ggplot(anscombe_fits, aes(x = fitted, y = resid)) +
-  geom_point(size = 2) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "#e34948") +
-  facet_wrap(~ set) +
-  labs(x = "fitted", y = "residual", title = "Anscombe's quartet: the residual plots tell the four stories") +
-  theme_minimal()
-
-anscombe_fits %>% group_by(set) %>% summarise(max_leverage = max(leverage), max_cooks = max(cooks))
-
-# result: all four fits have intercept 3.0, slope 0.50, R^2 = 0.67 and residual
-# SE 1.24. the residual plots are four DIFFERENT pictures: a shapeless band
-# (1), a perfect arch (2: the line misses the curve), one outlier standing
-# out far above the rest (3) and a vertical stack of points with a single
-# point far to the right (4). the influence numbers agree: in dataset 3 the
-# outlier has a Cook's distance of 1.39 (above 1: it moves the line a lot).
-# dataset 4 is the extreme case: its single distant point has a leverage of
-# exactly 1 -- the line passes straight through it, so the entire slope is
-# that one row -- and Cook's distance cannot even be computed (NaN)
+# the topic of the mixed-model section of 06
+#
+# a cluster BOOTSTRAP of the slope (resampling whole countries) gives the same
+# interval as the cluster-robust one: 4_regression-advanced/01
 
 
 ## WHAT WE FOUND
@@ -444,7 +357,7 @@ anscombe_fits %>% group_by(set) %>% summarise(max_leverage = max(leverage), max_
 # ====
 #   assumption            how we look                      what we do if it fails
 #   L  linearity          residuals vs fitted; add x^2     transform (log); add a curve term; model the bend
-#   I  independence       think about the design           cluster-robust SE; cluster bootstrap; mixed model (05)
+#   I  independence       think about the design           cluster-robust SE (advanced: bootstrap, mixed model)
 #   N  normal errors      QQ-plot of residuals             matters little for slopes at large n; use bootstrap CIs
 #   E  equal variance     residuals vs fitted; scale-loc.  robust (HC3) SE; transform the outcome
 #   influential rows      Cook's distance, leverage        check the row; refit without it; REPORT both
@@ -465,9 +378,4 @@ anscombe_fits %>% group_by(set) %>% summarise(max_leverage = max(leverage), max_
 #    instead. why is the second change more worrying?
 # 4. fit the straight line separately for wages above and below the median
 #    wage. do the two slopes agree with the bend found above?
-# 5. make a cluster bootstrap that resamples CITIES instead of countries.
-#    is its interval between the classic and the country-level one?
-# 6. in the Anscombe code, replace the one outlier of dataset 3 by the
-#    value predicted by the line through the other points. what happens to
-#    R^2 and to the residual standard error?
 # ====

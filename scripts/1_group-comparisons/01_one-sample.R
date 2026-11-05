@@ -508,3 +508,25 @@ df_one %>%
 # like cap_index broken down by urban_class, later in this course, are
 # exactly where the mean- and median-based answers genuinely diverge
 # ====
+
+
+## TRY IT YOURSELF
+# ====
+# solutions (code only, run it and read the output) are in 04_exercise-solutions.R.
+# try each exercise first without looking.
+#
+# 1. repeat the confidence interval for the MEAN HOURLY WAGE (wage_eur): by
+#    hand with 1.96, and with t.test(). are the two intervals the same? why
+#    (not)?
+# 2. test whether the average cappuccino price differs from 3.50, then from
+#    4.30 (instead of 3.90). what happens to t, the p-value and Cohen's d as
+#    the hypothesized value moves away from the sample mean?
+# 3. is wage_eur more or less skewed than cap_eur? check with a histogram and
+#    a QQ-plot, and then compare the t-based and the bootstrapped interval for
+#    the mean. which one would you report, and why?
+# 4. draw 30 random rows (set.seed(1); sample(cap_eur_vals, 30)) and repeat
+#    the t-test against 3.90. how do the interval and the p-value change with
+#    a small sample? run it with a few different seeds
+# 5. the one-sample Wilcoxon tests the MEDIAN. run it against the sample median
+#    and against a value 0.50 above it. what does the first p-value tell you?
+# ====

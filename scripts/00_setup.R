@@ -67,7 +67,7 @@ load_packages(
     "dplyr",
     "ggplot2",
     "ggthemes", # extra themes for ggplot
-    "ggpubr",   # for stat_pvalue_manual(); add to 00_setup.R if you like
+    "ggpubr",   # for stat_pvalue_manual() and other plot annotations
     "tidyr",
     #"Hmisc", # makes hist() work with a data.frame
     "xtable", # exports data frames to latex format

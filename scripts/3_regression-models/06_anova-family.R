@@ -1,16 +1,15 @@
 # ===================================================================
-# 05_anova-family.R -- THE OTHER VERSIONS OF ANOVA, AS LINEAR MODELS
+# 06_anova-family.R -- THE OTHER VERSIONS OF ANOVA, AS LINEAR MODELS
 # two-way ANOVA (two factors, main effects, interaction, unbalanced
-# groups), Type I / II / III sums of squares, why cutting a number into
-# groups is wasteful, ANCOVA (a factor plus a numeric covariate),
-# adjusted group means, interaction with a numeric variable (do the
-# slopes differ?), robust versions, and the ANOVA for clustered data:
-# random effects / mixed models (the ANOVA cousin of the repeated
-# measures designs and of the paired t-test)
+# groups), why cutting a number into groups is wasteful, ANCOVA (a
+# factor plus a numeric covariate), adjusted group means, interaction
+# with a numeric variable (do the slopes differ?), robust versions, and
+# a pointer to the ANOVA for clustered data (mixed models, in
+# 4_regression-advanced)
 # ===================================================================
 
 source("scripts/00_setup.R")
-load_packages(c("car", "emmeans", "lmtest", "sandwich", "lme4"))
+load_packages(c("car", "emmeans", "lmtest", "sandwich"))
 
 df_cap <- read.csv(file.path(dir_dat, "cappuccino-index-complete.csv"), sep = ",", header = TRUE)
 
@@ -64,7 +63,8 @@ table(df_two_way$urban_class, df_two_way$wage_band)
 # the table of counts is a "design": every combination of the two factors is
 # a CELL. note that the cells are very unequal: from 34 rows (Rural, low wage)
 # to 643 (Urban, low wage). a design with unequal cell sizes is called
-# UNBALANCED, and it is the reason the next-but-one section exists
+# UNBALANCED, and it makes the main-effect tests depend on the order of the terms
+# (more in 4_regression-advanced/03)
 #
 # the model: each of the 9 cell means is allowed to differ, and is decomposed
 # into pieces:
@@ -107,64 +107,15 @@ summary(fit_2way)$r.squared
 
 # result: the wage band has a huge main effect (F = 283), the interaction is
 # also clearly there (F = 8.3, p = 1e-6) and the urban class main effect is
-# p = 0.46. R^2 = 0.198. HOLD ON before reading the row of the urban class: it
-# changes when we change the order of the factors in the formula (next section)
+# p = 0.46. R^2 = 0.198. a warning about the row of the urban class: with unequal
+# cell sizes anova() tests the terms in the order of the formula, so that row
+# changes when the order changes (4_regression-advanced/03 shows by how much)
 #
 # and an important rule when an interaction is present: do NOT interpret the
 # main effects on their own ("the effect of the wage band") -- the interaction
 # says there is no single effect of the wage band, it depends on the class.
 # describe the cell means, or the effect of one factor within the levels of
 # the other
-
-
-## UNBALANCED DESIGNS: TYPE I, II AND III SUMS OF SQUARES
-# ====
-# when the cell sizes are unequal the factors are partly CONFOUNDED with each
-# other (here: more low-wage rows are Urban), and "the sum of squares of the
-# urban class" is no longer a single well-defined number -- it depends on
-# what we take into account FIRST. the three conventions:
-#
-#   Type I    SEQUENTIAL: each term is tested after those ABOVE it in the formula
-#             (anova() and summary(aov()) in base R). the answer depends on the ORDER
-#   Type II   each term is tested after all the other terms that do NOT contain
-#             it (so: main effects after each other, but BEFORE their interaction).
-#             a good default when the interaction is absent or not interpreted.
-#             car::Anova(fit, type = 2)
-#   Type III  each term is tested after ALL other terms, interaction included.
-#             needs sum-to-zero ("effect") coding of the factors to be meaningful
-#             (see 03) -- SPSS and SAS use it by default. car::Anova(fit, type = 3)
-#
-# with EQUAL cell sizes (a balanced design) the three types give the same
-# numbers; with unbalanced data they do not, and which one is "right" is a
-# question about what you want to test, not a statistical fact
-# ====
-
-# Type I, in both orders: the order of the two factors changes the first one
-anova(lm(cap_eur ~ urban_class + wage_band, data = df_two_way))    # urban class FIRST
-anova(lm(cap_eur ~ wage_band + urban_class, data = df_two_way))    # urban class SECOND
-
-# Type II and Type III for the model with the interaction
-Anova(fit_2way, type = 2)
-
-fit_2way_sum <- lm(cap_eur ~ urban_class * wage_band, data = df_two_way,
-                   contrasts = list(urban_class = "contr.sum", wage_band = "contr.sum"))
-Anova(fit_2way_sum, type = 3)
-
-# result: the F-test of the urban class changes with the convention: Type I
-# with the class first: F = 0.77, p = 0.46; with the class second (after the
-# wage band): F = 6.2, p = 0.002; Type II in the interaction model: F = 6.3,
-# p = 0.002; Type III: F = 4.6, p = 0.010. the same factor, the same data,
-# four p-values from 0.46 to 0.002. the reason is the one in 03: urban places
-# have LOWER wages, so the class is mixed up with the wage band, and whether
-# its "own" contribution is large depends on whether the wage band is allowed
-# to explain its share first. the interaction row (F = 8.3) is the same in
-# every convention -- it is the last term in all of them. rule of thumb: make
-# the choice BEFORE looking at the p-values, say which one you used, and
-# if the verdict depends on it, report the cell means and be careful
-#
-# (a Type III warning: it is only meaningful with sum-to-zero contrasts. with
-# R's default "treatment" coding, Anova(type = 3) tests something else and
-# can give misleading answers when there is an interaction)
 
 
 ## WHY NOT CUT A NUMBER INTO GROUPS? THE ANCOVA
@@ -185,6 +136,8 @@ Anova(fit_2way_sum, type = 3)
 
 fit_ancova <- lm(cap_eur ~ wage_eur + urban_class, data = df_cont)
 summary(fit_ancova)$coefficients
+# Anova(type = 2) tests each term after the other terms (the types of sums of
+# squares are explained in 4_regression-advanced/03)
 Anova(fit_ancova, type = 2)
 
 c(R2_one_way = summary(lm(cap_eur ~ urban_class, data = df_cont))$r.squared,
@@ -276,111 +229,30 @@ Anova(fit_ancova, type = 2, vcov. = vcovCL(fit_ancova, cluster = df_cont$country
 # class drops to 1.26 (p = 0.28), NOT significant, while the wage stays
 # overwhelming (F = 18, p = 2e-5). the class "effect" of the classic ANCOVA
 # disappears once the standard errors admit that rows of the same country
-# are alike. (the mixed model below gives yet another answer -- read on)
+# are alike. (a mixed model gives yet another answer: 4_regression-advanced/03)
 #
 # there is no standard non-parametric two-way ANOVA. the usual workaround is
 # the rank transformation of 03 (fit the same model to rank(y)), keeping in
 # mind that it loses the clean interpretation of an interaction. with
 # ties, skew and clusters like these, the better tool is a model that
-# respects the clustering -- next
+# respects the clustering: a mixed model (4_regression-advanced/03)
 
 
-## DEPENDENT OBSERVATIONS: RANDOM EFFECTS AND THE MIXED MODEL
+## DEPENDENT OBSERVATIONS: WHEN ROWS BELONG TOGETHER
 # ====
-# the last version of ANOVA is the one for data in which rows belong together.
-# the classic cases:
-#   - REPEATED MEASURES: the same person (or city, or cappuccino) measured
-#     several times. the paired t-test of 02_two-sample.R is its simplest form
-#     (two measurements per unit), the repeated-measures ANOVA the multi-
-#     measurement version
-#   - NESTED / HIERARCHICAL data: rows inside cities inside countries, as here
+# the last version of ANOVA is the one for data in which rows belong together:
+# the same person (or city) measured several times (REPEATED MEASURES; the paired
+# t-test of 02_two-sample.R is its simplest form), or rows nested in groups, as
+# here (cappuccinos in cities in countries). the tool is the MIXED MODEL, a
+# regression with a separate random intercept for each unit, written
+# lmer(y ~ x + (1 | unit)) in the lme4 package.
 #
-# the old repeated-measures ANOVA is a special case of a MIXED MODEL: a
-# regression with (a) FIXED effects, the usual coefficients we care about, and
-# (b) RANDOM effects, a separate intercept for each unit (city, country, person),
-# assumed to come from a bell-shaped distribution of unit differences.
-# a unit's random intercept absorbs everything that makes ITS rows alike
-# (a country's cost of living, a person's baseline), which removes the
-# dependence between rows. in R (lme4):
-#
-#   lmer(y ~ fixed terms + (1 | unit), data)
-#
-# (1 | unit) = "a random intercept for each unit". nested units: (1 | country/city)
+# in this data the rows of one country are very alike: about 80% of the variation
+# in prices lies BETWEEN countries (an intraclass correlation of 0.80). that is the
+# reason for the cluster-robust standard errors of 02 and 04, and the mixed model
+# is the other way to respect it. it needs some extra theory, so it lives in
+# 4_regression-advanced/03_mixed-models-and-sums-of-squares.R
 # ====
-
-# step 1: the EMPTY model: only a grand mean and random intercepts for countries.
-# its job is to split the variance of the price into "between countries" and
-# "within a country"
-fit_null <- lmer(cap_eur ~ 1 + (1 | country), data = df_cont)
-summary(fit_null)
-
-vc <- as.data.frame(VarCorr(fit_null))
-vc[, c("grp", "vcov")]
-
-# the INTRACLASS CORRELATION (ICC): the share of the total variance that lies
-# between the units. also the correlation between two rows of the same unit
-icc_country <- vc$vcov[vc$grp == "country"] / sum(vc$vcov)
-icc_country
-
-# result: the variance between countries is 1.42 and the residual (within a country)
-# variance is 0.36: ICC = 0.80. EIGHTY percent of the variation in
-# cappuccino prices in this dataset is between countries, only 20% between
-# the rows of the same country. that is the single most important fact about
-# these data, and the reason why all the standard errors in 01-04 that treat
-# rows as independent are too small (two rows from one country are, on
-# average, correlated 0.8!). for comparison: ICC = 0 would mean rows from
-# a country are no more alike than rows from different countries
-
-# step 2: the wage as a fixed effect, with random intercepts for countries and
-# for the cities inside them
-fit_mixed <- lmer(cap_eur ~ wage_eur + (1 | country / city_id), data = df_cont)
-summary(fit_mixed)
-
-data.frame(model = c("simple lm (01)", "random city intercept", "random country + city", "country dummies (04)"),
-           wage_slope = c(coef(lm(cap_eur ~ wage_eur, data = df_cont))["wage_eur"],
-                          fixef(lmer(cap_eur ~ wage_eur + (1 | city_id), data = df_cont))["wage_eur"],
-                          fixef(fit_mixed)["wage_eur"],
-                          coef(lm(cap_eur ~ wage_eur + factor(country), data = df_cont))["wage_eur"]))
-
-# result: the variance components of the mixed model: country 1.21, city
-# (within country) 0.07, residual 0.30. so most of the variation is BETWEEN
-# countries (77% of the total), 4% is between cities of the same country and
-# 19% is left within a city. the wage slope in the mixed model is 0.0247 (se
-# 0.0044): under a third of the pooled 0.0858, and close to the country-dummy value
-# 0.029 (04). the mixed model takes into account that the wage differs
-# mostly between countries, with the random effects "soaking up" the rest of
-# the country differences. the slope is still clearly positive (t = 5.6):
-# within a country, a city with a 10-euro higher wage has a cappuccino about
-# 25 cents dearer. NOTE: no p-values are printed. lme4 does not provide them
-# on purpose (the degrees of freedom of a mixed model are debated); use the t-value
-# (|t| > 2 is roughly p < 0.05), a likelihood-ratio test (anova(m0, m1)), or
-# the lmerTest package
-
-# the mixed ANCOVA: the urban class as a factor, the wage as a covariate, and
-# random intercepts for the countries
-fit_mixed_ancova <- lmer(cap_eur ~ wage_eur + urban_class + (1 | country), data = df_cont)
-summary(fit_mixed_ancova)$coefficients
-
-# a likelihood-ratio test for the urban class (refit with ML, which anova()
-# does automatically): the mixed-model version of the F-test of the factor
-fit_mixed_noclass <- lmer(cap_eur ~ wage_eur + (1 | country), data = df_cont)
-anova(fit_mixed_noclass, fit_mixed_ancova)
-
-# result: the wage slope is 0.032 (t = 7.4) and, relative to Rural, Suburban is
-# +0.002 (t = 0.04) and Urban +0.120 (t = 2.2). the likelihood-ratio test of the
-# class is chi-square = 17.7 on 2 df, p = 0.0001: significant. so we have three
-# answers on the class: classic ANCOVA p = 0.0003, cluster-robust ANCOVA p =
-# 0.28, mixed model p = 0.0001. they are not contradictions: they answer
-# different questions. the cluster-robust test treats countries as the units
-# and compares the classes ACROSS the whole data (where the class mix differs
-# country by country). the mixed model gives every country its own baseline
-# and so compares Urban with Suburban and Rural places mostly WITHIN a
-# country -- a sharper comparison, which finds Urban cappuccinos about 12 cents
-# dearer at the same wage. the within-country reading is the more convincing
-# one (it cannot be produced by differences between countries), but it rests on
-# the mixed model's assumptions (normal random intercepts, a common slope --
-# and we saw that the slopes differ by class). report the model, its
-# assumptions, and the fact that the conclusion depends on how dependence is handled
 
 
 ## WHICH ANOVA DO I USE? A DECISION GUIDE
@@ -396,6 +268,8 @@ anova(fit_mixed_noclass, fit_mixed_ancova)
 #   unequal variances                                 add white.adjust = "hc3"      Welch ANOVA
 #   skewed outcome, outliers                          transform (log) or ranks      Kruskal-Wallis
 #
+# (the lmer() rows are explained in 4_regression-advanced/03)
+#
 # the questions to ask in this order: (1) what is the OUTCOME? (2) which
 # predictors, categorical or numeric? (3) are the rows independent? if not,
 # what are the units? (4) is the design balanced? (5) do the effects depend
@@ -407,36 +281,27 @@ anova(fit_mixed_noclass, fit_mixed_ancova)
 # ====
 # - a two-way ANOVA of price by urban class and wage band shows a significant
 #   interaction (F = 8.3): the effect of the wage band depends on the class
-# - with unequal cell sizes the F-test of the urban class depends on the type
-#   of sum of squares (p from 0.46 to 0.002) -- the factors overlap
+# - with unequal cell sizes the F-test of the urban class depends on the order
+#   of the terms / the type of sum of squares (p from 0.46 to 0.002) -- the
+#   factors overlap (4_regression-advanced/03)
 # - cutting the wage into bands wastes information: the ANCOVA with the
 #   numeric wage explains more (R^2 0.232 vs 0.187 / 0.198) with fewer parameters
 # - the urban class, which does not matter alone, matters once the wage is
 #   in the model (F = 8.2); Suburban places are cheaper than Urban places at
 #   the same wage -- but the slopes differ by class (interaction F = 10.8), so
 #   there is no single difference, and the class effect is not significant
-#   with country-clustered standard errors (p = 0.28), though it is in the
-#   mixed model (p = 0.0001)
-# - 80% of the variance of prices lies between countries (ICC = 0.80). once
-#   countries are random effects the wage slope falls to about 0.025 from
-#   0.086 -- the pooled slope mostly reflects differences between countries
+#   with country-clustered standard errors (p = 0.28); a mixed model
+#   (4_regression-advanced/03) gives a different answer, so the conclusion
+#   depends on how dependence between rows is handled
+# - rows of the same country are very alike (about 80% of the variance of
+#   prices lies between countries), which is why the clustered tests matter
 # ====
 
 
 ## TRY IT YOURSELF
 # ====
-# 1. make the two-way design BALANCED by drawing 34 rows (the size of the
-#    smallest cell) from every cell with slice_sample(). do Type I, II and III
-#    now agree? why?
-# 2. cut the wage into FIVE bands instead of three and refit the two-way
+# 1. cut the wage into FIVE bands instead of three and refit the two-way
 #    model. what happens to the interaction? and to R^2?
-# 3. fit the ANCOVA on log(cap_eur) with log(wage_eur) as the covariate. do the
+# 2. fit the ANCOVA on log(cap_eur) with log(wage_eur) as the covariate. do the
 #    class differences and the interaction change?
-# 4. add urban_class to fit_mixed (random country + city) and test it with a
-#    likelihood-ratio test against the model without it
-# 5. add a random SLOPE for the wage within countries: (1 + wage_eur | country).
-#    does the average wage slope change? what does the variance of the
-#    slopes tell you? (the model may warn about convergence: why?)
-# 6. compute the ICC for the city level on its own (null model with (1 |
-#    city_id)). is it larger or smaller than the country ICC? why?
 # ====

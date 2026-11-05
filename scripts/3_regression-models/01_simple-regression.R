@@ -4,7 +4,7 @@
 # the line by least squares (by hand and with lm), reading summary(),
 # the link to the correlation from 2_associations, residuals and R^2,
 # standard errors and confidence intervals, the meaning of the
-# intercept, units, predictions, and why it is called "regression"
+# intercept, units, and predictions
 # ===================================================================
 
 source("scripts/00_setup.R")
@@ -132,14 +132,10 @@ ggplot(df_cont, aes(x = wage_eur, y = cap_eur)) +
 # reading: the slope is the covariance rescaled by the spread of the
 # PREDICTOR (so it has the units "euros of price per euro of wage"), and the
 # intercept forces the line through the point of means (mean(x), mean(y)).
-# a computer can also find it by brute force -- optim() searches for the
-# b0 and b1 with the smallest SSE and lands on the same numbers:
 # ====
 
 c(b1_cov_var = b1_hand, b1_r_sd = cor(x, y) * sd(y) / sd(x))   # two ways to the same slope
 b0_hand
-
-optim(c(0, 0), function(b) sse(b[1], b[2]))$par   # brute-force search: same numbers (up to rounding)
 
 
 ## THE SAME THING WITH lm()
@@ -264,30 +260,23 @@ df_cont %>%
   theme_minimal()
 
 
-## HOW MUCH DOES THE MODEL EXPLAIN? SST, SSR, SSE AND R^2
+## HOW MUCH DOES THE MODEL EXPLAIN? R^2
 # ====
-# the same bookkeeping as in the ANOVA of 1_group-comparisons: the total
-# variation of the outcome is split into a part the model captures and a part
-# it does not:
+# the total variation of the outcome around its mean (SST: the SSE of the flat
+# line above) is split into a part the line leaves unexplained (SSE, the squared
+# residuals) and a part it captures. it is the same split as between and within
+# in the one-way ANOVA of 1_group-comparisons -- a hint that ANOVA and
+# regression are one family (script 03 makes it explicit)
 #
-#   SST = sum( (y - mean(y))^2 )          total variation (the flat line's SSE)
-#   SSE = sum( (y - fitted)^2 )           left over: the residuals
-#   SSR = sum( (fitted - mean(y))^2 )     captured by the line ("regression")
-#   SST = SSR + SSE
+#   R^2 = 1 - SSE / SST       the SHARE of the variation explained
 #
-#   R^2 = SSR / SST = 1 - SSE / SST       the SHARE of the variation explained
-#
-# note: it is the SAME decomposition as SS_total = SS_between + SS_within in
-# the one-way ANOVA -- a hint that ANOVA and regression are one family
-# (script 03 makes it explicit)
+# (the full SST = SSR + SSE bookkeeping is in 4_regression-advanced/02)
 # ====
 
-sst <- sum((y - mean(y))^2)
-sse_fit <- sum(df_cont$resid^2)
-ssr <- sum((df_cont$fitted - mean(y))^2)
+sst <- sum((y - mean(y))^2)       # total variation around the mean
+sse_fit <- sum(df_cont$resid^2)   # left over: the residuals
 
-c(SST = sst, SSR_plus_SSE = ssr + sse_fit)
-c(R2_by_hand = ssr / sst, R2_lm = summary(fit)$r.squared)
+c(R2_by_hand = 1 - sse_fit / sst, R2_lm = summary(fit)$r.squared)
 
 # the RESIDUAL STANDARD ERROR is the typical miss, in the units of the
 # outcome (euros). it divides SSE by n - 2 degrees of freedom -- two
@@ -307,7 +296,7 @@ sd(y)
 # humbling side of R^2 again.) one more note: R^2 is
 # descriptive, not a test and not a verdict. a low R^2 is normal when
 # the outcome is noisy (prices, behavior), and a high R^2 can be worthless
-# (see Anscombe in 02_regression-diagnostics.R)
+# (see Anscombe in 2_associations/02_two-continuous.R)
 
 
 ## HOW SURE ARE WE? THE STANDARD ERROR OF THE SLOPE
@@ -324,18 +313,12 @@ sd(y)
 # the same logic as every t-test in the course
 # ====
 
-se_b1 <- sigma_hat / sqrt(sum((x - mean(x))^2))
-t_b1  <- b1_hand / se_b1
-p_b1  <- 2 * pt(-abs(t_b1), df = n - 2)
-c(se = se_b1, t = t_b1, p = p_b1)
-
 # the 95% confidence interval: estimate +/- critical t * standard error
-b1_hand + c(-1, 1) * qt(0.975, df = n - 2) * se_b1
-confint(fit)   # lm's version, for both coefficients: the same interval for the slope
+confint(fit)   # for both coefficients
 
-# the F-test at the bottom of summary() asks whether the model as a whole
-# beats the flat line. with ONE predictor it is just the squared t-test:
-c(F = unname(summary(fit)$fstatistic[1]), t_squared = t_b1^2)
+# (the F-test at the bottom of summary() asks whether the model as a whole
+# beats the flat line; with ONE predictor it is just the squared t-test of the
+# slope. the by-hand standard error, t, p and F are in 4_regression-advanced/02)
 
 # result: se = 0.0032, t = 26.7, 95% CI for the slope 0.0795 to 0.0920 -- the
 # data are compatible with a rise of roughly 8 to 9 cents per euro of wage,
@@ -433,29 +416,6 @@ ggplot(df_cont, aes(x = wage_eur, y = cap_eur)) +
 # predicting at a wage of 80 euros is EXTRAPOLATION -- the line keeps going,
 # reality may not. (2) the prediction describes the pattern in these rows;
 # it is not a forecast of what happens if a particular city changes its wage
-
-
-## WHY IS IT CALLED "REGRESSION"? A GLANCE AT 1886
-# ====
-# Francis Galton compared the heights of parents and their adult children
-# and found that tall parents have, on average, children who are tall but
-# LESS tall than the parents -- and short parents have children closer to
-# the average. he called this "regression towards mediocrity". it is the
-# slope of the STANDARDIZED line: it equals r, which is below 1, so a
-# value that is z standard deviations from the mean is PREDICTED to be only
-# r * z standard deviations from the mean on the other variable
-#
-# here: a city whose wage is 2 sd above the mean is predicted to have a
-# price only 2 * 0.476 = 0.95 sd above the mean price
-# ====
-
-z_wage <- 2
-z_price_pred <- unname(coef(lm(scale(y) ~ scale(x)))[2]) * z_wage
-z_price_pred   # 0.95 sd above the mean price, not 2
-
-# the line is not "wrong" -- it is the best guess when the link is not
-# perfect. this is also why predicting x from y gives a DIFFERENT line from
-# predicting y from x (try lm(wage_eur ~ cap_eur, data = df_cont) and see)
 
 
 ## WHAT WE FOUND

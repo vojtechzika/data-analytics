@@ -113,7 +113,7 @@ hist(means_female_n30)
 # parametric test -- no simulation required
 #
 # the real trigger for needing the different tools you'll see later (in
-# 2_other-data) isn't "failed a normality test" -- it's SAMPLE SIZE.
+# 1_group-comparisons) isn't "failed a normality test" -- it's SAMPLE SIZE.
 # small samples don't have enough observations for CLT to kick in.
 #
 # this is why GROUP size matters, not just overall dataset size: if a
@@ -129,6 +129,6 @@ hist(means_female_n30)
 #    tool for the question, regardless of sample size
 #
 # (mechanically, the resampling trick used above resembles
-# "bootstrapping" -- more on that properly when it's actually useful,
-# in 2_other-data)
+# "bootstrapping" -- more on that properly in 07_bootstrapping.R and
+# in 1_group-comparisons)
 # ====

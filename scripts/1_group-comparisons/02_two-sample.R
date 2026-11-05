@@ -593,3 +593,21 @@ df_long %>% wilcox_effsize(price ~ time, paired = TRUE)  # rank-based r
 # makes sense if the direction was fixed BEFORE looking at the data.
 # effect sizes don't depend on the tail -- they describe the data
 # ====
+
+## TRY IT YOURSELF
+# ====
+# solutions (code only, run it and read the output) are in 04_exercise-solutions.R.
+#
+# 1. compare MILK prices (milk_eur) of Urban and Rural places: Welch t-test,
+#    Cohen's d and the Wilcoxon rank-sum test. do the parametric and the
+#    rank-based test agree? (milk_eur has missing values: drop them first)
+# 2. switch the factor levels so that Rural comes first and run the ONE-TAILED
+#    test "greater" again. what happens to the p-value, and why? what does
+#    this teach you about choosing the direction of a one-tailed test?
+# 3. compare the HOURLY WAGE (wage_eur) of Urban and Rural places: build the
+#    95% CI of the difference by hand and compare it with t.test(). do the
+#    wages differ, and is the difference large?
+# 4. draw 15 random rows per group (set.seed(1), use group_by() and slice_sample())
+#    and repeat the Welch test for cap_eur. how do the p-value and Cohen's d
+#    change when the sample shrinks? which one is stable, and why?
+# ====

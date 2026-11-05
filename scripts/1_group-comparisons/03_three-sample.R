@@ -527,3 +527,20 @@ ggplot(cap_idx_ci, aes(x = urban_class, y = med)) +
 # tests and CI graphs tell you WHICH ones, and the effect sizes tell you
 # HOW MUCH
 # ====
+
+## TRY IT YOURSELF
+# ====
+# solutions (code only, run it and read the output) are in 04_exercise-solutions.R.
+#
+# 1. run a one-way ANOVA of the HOURLY WAGE (wage_eur) on urban_class. report
+#    F, the p-value and eta squared. then check the equal-variance assumption
+#    with Levene's test and decide whether to use the classic or Welch ANOVA
+# 2. follow up the wage ANOVA with Tukey's HSD. which pairs differ? repeat with
+#    Games-Howell. do the conclusions agree?
+# 3. compare the three urban classes on milk_eur (drop the missing values).
+#    would you rather use ANOVA or Kruskal-Wallis? look at the plot first and
+#    justify your choice
+# 4. run the three pairwise Welch t-tests for cap_eur WITHOUT a correction and
+#    then with Holm's correction (pairwise.t.test with p.adjust.method = "holm").
+#    which p-values change, and by how much?
+# ====

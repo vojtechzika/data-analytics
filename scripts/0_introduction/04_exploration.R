@@ -94,13 +94,12 @@ invisible( sapply(df_hwb[c("height", "weight", "bmi")], hist) )
 # ran above) — there is no hist.data.frame() in base R.
 
 ## the Hmisc package adds exactly that missing method — which is why
-# hist(df_hwb) below already works: 00_setup.R already loaded Hmisc at
-# the top of this script, so the SAME hist() call now dispatches to
-# Hmisc's hist.data.frame() instead, plotting every numeric column at once
-# install.packages("Hmisc")
-# library(Hmisc)
-# this is how you'd install/load a package inline in a script, but since
-# we expect to reuse Hmisc a lot, we install/load it "globally" in 00_setup.R instead
+# hist(df_hwb) below works once Hmisc is loaded: the SAME hist() call then
+# dispatches to Hmisc's hist.data.frame() instead, plotting every numeric
+# column at once. we load it here, in this script only, and not in
+# 00_setup.R, because Hmisc masks a few functions we use elsewhere
+# (R prints a "masked" message when you load it; that is expected)
+load_packages("Hmisc")
 hist(df_hwb)
 
 

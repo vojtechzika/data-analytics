@@ -1,6 +1,6 @@
 # ===================================================================
-# 09_what-next-latex.R — a conceptual bridge into the next two course
-# folders, plus a first look at exporting tables to LaTeX
+# 09_what-next-latex.R — a conceptual bridge into the next course
+# folders (1_group-comparisons and 2_associations), plus a first look at exporting tables to LaTeX
 # ===================================================================
 
 # ============================================================
@@ -45,9 +45,9 @@ source("scripts/00_setup.R")
 # 3. THE LINGO
 # ============================================================
 # ====
-# this course calls the two upcoming folders "normal-data" and
-# "other-data" -- but the standard statistical terms for this exact
-# split are PARAMETRIC and NONPARAMETRIC:
+# the next folders (1_group-comparisons, 2_associations) show, for almost
+# every question, one mean-based and one rank-based tool. the standard
+# statistical terms for this split are PARAMETRIC and NONPARAMETRIC:
 #
 #   PARAMETRIC     = assumes the data follows a known distribution
 #                    (usually normal), described by a small set of

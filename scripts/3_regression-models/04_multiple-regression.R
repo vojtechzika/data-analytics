@@ -2,11 +2,9 @@
 # 04_multiple-regression.R -- MORE THAN ONE PREDICTOR: ADDING THE PRICE OF MILK
 # the milk data (a COUNTRY-level variable), why models must be compared on the
 # same rows, milk on its own, the two-predictor model and what "holding the
-# other variable fixed" means, why a coefficient changes (omitted variable
-# bias, and its formula), the residual-on-residual view (Frisch-Waugh),
-# comparing nested models (R^2, adjusted R^2, F-test, AIC), standardized
-# coefficients, collinearity, the log version, WHO COUNTS (rows or
-# countries), adding the urban class, and interactions
+# other variable fixed" means, why a coefficient changes, comparing nested
+# models (R^2, adjusted R^2, F-test), collinearity, the log version, WHO COUNTS
+# (rows or countries), adding the urban class, and interactions
 # ===================================================================
 
 source("scripts/00_setup.R")
@@ -147,77 +145,29 @@ confint(fit_wm)
 #       little left to explain. let us see exactly why
 
 
-## WHY DID A COEFFICIENT CHANGE? OMITTED VARIABLE BIAS
+## WHY DID A COEFFICIENT CHANGE?
 # ====
-# there is an exact formula. take the model with both variables (the "long"
-# model) and a model that leaves the second one out (the "short" one). then
+# the milk coefficient changed from +0.130 (alone) to -0.058 (next to the wage),
+# while the wage coefficient hardly moved (0.0846 -> 0.0853). the rule: a
+# coefficient changes when you add a variable only if that variable (1) matters
+# for the outcome AND (2) is related to the variable whose coefficient you look at.
 #
-#   slope in the short model  =  its slope in the long model
-#                                +  (the other variable's long-model slope)
-#                                   * (slope of the other variable regressed
-#                                      on this one)
+#   - wage -> price: the wage matters a lot for the price, and richer countries
+#     have dearer milk (see below), so milk alone "borrows" the wage's association
+#   - milk -> wage coefficient: milk hardly matters once the wage is in, and is
+#     only weakly related to the wage, so the wage coefficient barely moves
 #
-# for the wage:    b_wage(short) = b_wage(long) + b_milk(long) * delta,
-#                  delta = slope of  milk ~ wage
-# for milk:        b_milk(short) = b_milk(long) + b_wage(long) * gamma,
-#                  gamma = slope of  wage ~ milk
-#
-# the second term is the BIAS: it is large only if the left-out variable
-# matters for the outcome (b nonzero) AND is related to the included one
-# (delta nonzero). this is the whole logic of "controlling for a confounder"
+# this is the logic of "controlling for a confounder". the exact formula
+# (omitted variable bias) and the residual-on-residual picture are in
+# 4_regression-advanced/02_model-theory-extras.R
 # ====
 
-delta <- coef(lm(milk_eur ~ wage_eur, data = df_milk))["wage_eur"]
-gamma <- coef(lm(wage_eur ~ milk_eur, data = df_milk))["milk_eur"]
-b <- coef(fit_wm)
+coef(lm(wage_eur ~ milk_eur, data = df_milk))["milk_eur"]   # a euro more milk per litre goes with ~2.2 euros more hourly wage
 
-rbind(wage = c(short_model = unname(coef(fit_wage)["wage_eur"]),
-               long_plus_bias = unname(b["wage_eur"] + b["milk_eur"] * delta)),
-      milk = c(short_model = unname(coef(fit_milk)["milk_eur"]),
-               long_plus_bias = unname(b["milk_eur"] + b["wage_eur"] * gamma)))
-
-c(delta = unname(delta), gamma = unname(gamma))
-
-# result: both rows match exactly. for the wage, delta is 0.012 (a euro more
-# of wage goes with 1.2 cents more milk) and milk's long-model coefficient is
-# -0.058, so the bias is -0.058 * 0.012 = -0.0007: negligible. for milk the
-# bias is large: gamma = 2.2 (a euro more milk per litre goes with 2.2 euros
-# more hourly wage -- countries with dear milk are richer) times the wage
-# slope 0.085 gives a bias of +0.19, which turns milk's long-model
-# coefficient of -0.058 into the short-model +0.130. the apparently positive
-# association of milk with cappuccino prices is borrowed from the wage,
-# because wage and milk move together. the wage is a textbook confounder of
-# MILK's slope (though not the other way round)
-
-
-## THE SAME THING AS A PICTURE: "RESIDUAL ON RESIDUAL" (FRISCH-WAUGH)
-# ====
-# there is a second way to see what "holding milk fixed" does. to get the wage
-# coefficient of the two-predictor model:
-#   1. regress price on milk, keep the RESIDUALS: the part of the price that
-#      milk does not explain
-#   2. regress wage on milk, keep the RESIDUALS: the part of the wage that
-#      milk does not explain
-#   3. regress the first residuals on the second: the slope IS the wage
-#      coefficient of the full model
-# so a multiple regression coefficient is the simple slope AFTER the other
-# predictors' influence has been subtracted from both variables. plotting
-# the two sets of residuals is the "added-variable plot" (avPlots() in car)
-# ====
-
-res_price <- resid(lm(cap_eur ~ milk_eur, data = df_milk))
-res_wage  <- resid(lm(wage_eur ~ milk_eur, data = df_milk))
-c(residual_slope = unname(coef(lm(res_price ~ res_wage))[2]), full_model = unname(b["wage_eur"]))
-
-ggplot(data.frame(res_wage, res_price), aes(x = res_wage, y = res_price)) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "lm", formula = y ~ x, color = "#e34948") +
-  labs(x = "wage, after removing what milk explains", y = "price, after removing what milk explains",
-       title = "Added-variable plot: the wage coefficient of the two-predictor model") +
-  theme_minimal()
-
-# car's ready-made version, for both predictors (one panel each)
-avPlots(fit_wm)
+# result: richer countries have dearer milk (about 2.2 euros of hourly wage per euro of
+# milk), and the wage raises the price (0.085 per euro). 2.2 * 0.085 = +0.19 is the
+# amount of the wage's association that milk alone absorbs, turning -0.058 into
+# +0.130. the wage is a textbook confounder of MILK's slope (though not the other way round)
 
 
 ## DOES MILK IMPROVE THE MODEL? COMPARING NESTED MODELS
@@ -231,42 +181,20 @@ avPlots(fit_wm)
 #   adjusted R^2    R^2 penalized for the number of predictors; it CAN go down
 #   F-test          anova(small, big): H0 = "the added terms are all zero"
 #                   (with ONE added variable it is the square of its t-test)
-#   AIC / BIC       information criteria: lower is better; BIC penalizes size
-#                   more strongly. they compare models fitted on the SAME rows
-#                   (different from the F-test, they do not need nesting)
+#
+# (AIC and BIC, which also compare models, are in the advanced folder)
 # ====
 
 anova(fit_wage, fit_wm)
 
 data.frame(model = c("wage", "wage + milk"),
            R2     = c(summary(fit_wage)$r.squared, summary(fit_wm)$r.squared),
-           adj_R2 = c(summary(fit_wage)$adj.r.squared, summary(fit_wm)$adj.r.squared),
-           AIC    = AIC(fit_wage, fit_wm)$AIC,
-           BIC    = BIC(fit_wage, fit_wm)$BIC)
+           adj_R2 = c(summary(fit_wage)$adj.r.squared, summary(fit_wm)$adj.r.squared))
 
 # result: R^2 rises from 0.2245 to 0.2251 -- by construction. adjusted R^2
 # is 0.2242 for the wage model and 0.2244 for wage + milk: a gain of 0.0003
-# that is not worth a decimal. the F-test gives F = 1.79, p = 0.18, the AIC is
-# 5983.9 vs 5984.1 and the BIC 6001 vs 6007 -- both in favor of the SIMPLER
-# model. all the lenses say: milk adds nothing once the wage is in
-
-
-## WHICH PREDICTOR MATTERS MORE? STANDARDIZED COEFFICIENTS
-# ====
-# raw slopes cannot be compared across predictors with different units (euros
-# per euro of wage vs euros per euro of milk-per-litre). a standard fix is to
-# standardize every variable (subtract the mean, divide by the sd) and
-# refit: each coefficient then says "how many SDs of the OUTCOME the price
-# moves per 1 SD of the PREDICTOR". with one predictor this is r (01)
-# ====
-
-coef(lm(scale(cap_eur) ~ scale(wage_eur) + scale(milk_eur), data = df_milk))
-
-# result: wage 0.478, milk -0.024: one standard deviation more wage (about 5.4
-# euros) goes with 0.48 SD higher prices, one SD more milk (0.40 euros per litre)
-# with 0.02 SD LOWER prices -- 20 times smaller. standardized coefficients
-# compare predictors on a common scale; they do not tell you which would be
-# the better lever, and they depend on the spread in THIS sample
+# that is not worth a decimal. the F-test gives F = 1.79, p = 0.18. all the
+# lenses say: milk adds nothing once the wage is in
 
 
 ## COLLINEARITY: WHEN THE PREDICTORS ARE TOO ALIKE
@@ -379,71 +307,12 @@ compare_se(fit_log_wm, "log(wage_eur)")
 # at the country level) -- it varies within countries too
 
 
-## SAME QUESTION, DIFFERENT UNIT: A REGRESSION OF COUNTRIES
-# ====
-# if milk is a country property, why not analyze countries? collapse the data
-# to ONE row per country (the mean log price, the mean log wage, the milk
-# price) and fit the same model. but there is a choice hidden here: should the
-# country of 572 rows (USA) count as much as the country of 1 row (Taiwan)?
-# an UNWEIGHTED country regression says yes; a regression WEIGHTED by the number
-# of rows says no -- and it comes close to the row-level analysis
-# ====
-
-df_country <- df_milk %>%
-  group_by(country) %>%
-  summarise(n_rows = n(),
-            mean_log_price = mean(log(cap_eur)),
-            mean_log_wage  = mean(log(wage_eur)),
-            milk_eur       = first(milk_eur),
-            .groups = "drop")
-
-fit_cty_unw <- lm(mean_log_price ~ mean_log_wage + log(milk_eur), data = df_country)
-fit_cty_w   <- lm(mean_log_price ~ mean_log_wage + log(milk_eur), data = df_country, weights = n_rows)
-
-rbind(unweighted = summary(fit_cty_unw)$coefficients["log(milk_eur)", ],
-      weighted   = summary(fit_cty_w)$coefficients["log(milk_eur)", ])
-
-ggplot(df_country, aes(x = milk_eur, y = mean_log_price, size = n_rows)) +
-  geom_point(alpha = 0.5) +
-  scale_x_log10() +
-  labs(x = "milk_eur (log scale)", y = "country mean of log(cap_eur)", size = "rows in the data",
-       title = "One point per country: cheap milk and cheap coffee go together -- unless you count rows") +
-  theme_minimal()
-
-# result: the unweighted country regression gives milk an elasticity of +0.26
-# (se 0.114, p = 0.026): positive and "significant". the weighted regression
-# gives -0.066 (se 0.067, p = 0.33): negative, like the row-level model. the
-# SIGN of the milk coefficient depends on whether a country with 2 rows counts
-# as much as one with 572. the cheap-milk, cheap-coffee countries (India,
-# Bolivia, Pakistan: 0.65 to 0.83 euros per litre, only 14 rows between them)
-# drive the first, the rich many-row countries (USA, UK, Germany) the second.
-# this is what fragility looks like: a conclusion that flips with a defensible
-# analytic choice should not be reported as a finding. the honest summary is
-# "no reliable association of milk with price once the wage is taken into
-# account", plus the note that the dataset's rows are not a sample of
-# countries (the numbers of rows per country reflect where data were collected)
-
-
-## MOST OF THE WAGE EFFECT IS ALSO BETWEEN COUNTRIES
-# ====
-# the same lens on the wage. a model with a separate intercept for every
-# country ("country fixed effects") compares cities WITHIN each country only, so
-# everything that makes countries different (milk, prices level, taxes, culture)
-# is removed:
-# ====
-
-fit_fe <- lm(cap_eur ~ wage_eur + factor(country), data = df_milk)
-rbind(pooled          = coeftest(fit_wage)["wage_eur", ],
-      country_effects = coeftest(fit_fe, vcov = vcovCL(fit_fe, cluster = df_milk$country))["wage_eur", ])
-
-# result: within countries the wage slope is 0.029 (cluster se 0.008, still
-# significant at p = 0.0002), about a THIRD of the pooled 0.085. so two thirds
-# of what the pooled line calls "the effect of the wage" is a difference
-# BETWEEN countries: richer countries have dearer cappuccinos, and the pooled
-# line adds that to the comparison of cities inside a country. neither number
-# is "the" answer: they describe different comparisons. random-intercept
-# (mixed) models, in 05, handle this in a more economical way than 86
-# dummy variables
+# two more ways of asking "who counts, rows or countries?" -- a regression of
+# countries (weighted or not) and country fixed effects -- are in
+# 4_regression-advanced/01_clustered-inference.R. the short version: within countries
+# the wage slope is about 0.029, a third of the pooled 0.085, so most of the
+# wage-price relationship is between countries; and the milk coefficient flips
+# sign (+0.26 or -0.07) depending on whether countries are weighted by their rows
 
 
 ## ADDING A CATEGORICAL PREDICTOR: THE URBAN CLASS
@@ -475,7 +344,7 @@ anova(fit_wm, fit_wmu)
 # second. and a reminder: in 03 the three classes had the SAME mean price (F = 0.63); now,
 # comparing places with the same wage, they do not -- urban places have lower
 # wages but equal prices, so at equal wages Urban prices are relatively
-# higher. that is the topic of 05
+# higher. that is the topic of 06
 
 
 ## INTERACTIONS: DOES THE SLOPE DEPEND ON THE OTHER VARIABLE?
@@ -499,7 +368,7 @@ anova(fit_wm, fit_int)
 
 # result: the interaction is -0.002 (t = -0.25, p = 0.80): no sign that the wage
 # slope depends on the milk price. we stay with the additive model. (the
-# wage x urban_class interaction is another matter, see 05)
+# wage x urban_class interaction is another matter, see 06)
 
 
 ## A NOTE ON CAUSATION
@@ -524,16 +393,15 @@ anova(fit_wm, fit_int)
 # - alone, milk looks positively related to price (+0.13 euros per euro of
 #   milk, p = 0.008, R^2 = 0.003); next to the wage the milk coefficient is
 #   -0.058 (p = 0.18) and the wage slope barely changes (0.0846 -> 0.0853).
-#   omitted variable bias shows exactly why: milk's raw association was
-#   borrowed from the wage (richer countries have dearer milk)
-# - milk adds nothing by R^2, adjusted R^2, the F-test, AIC or BIC
+#   milk's raw association was borrowed from the wage (richer countries have
+#   dearer milk)
+# - milk adds nothing by R^2, adjusted R^2 or the F-test
 # - in logs milk is "significant" with a NEGATIVE sign (p = 0.0006), but the
 #   result vanishes (p = 0.58) once countries are treated as the independent
-#   units; country-level regressions give +0.26 or -0.07 depending on
-#   weighting: the milk effect is not robust, and should not be reported as
-#   an effect
-# - within countries the wage slope is 0.029, a third of the pooled 0.085: most
-#   of the wage-price relationship is between countries
+#   units; the milk effect is not robust, and should not be reported as an
+#   effect (4_regression-advanced/01 shows that even its sign flips with the
+#   analytic choice, and that most of the wage-price relationship is between
+#   countries)
 # - the urban class matters jointly (F-test p = 0.0008) once the wage is
 #   controlled, even though it did not on its own (03)
 # ====
@@ -544,11 +412,9 @@ anova(fit_wm, fit_int)
 #   question                                tool
 #   a model with several predictors         lm(y ~ x1 + x2 + ...)
 #   what does a slope mean?                 the change in y per unit of x, other predictors held fixed
-#   why does a coefficient change?          omitted variable bias: bias = (other's coefficient) * (their relation)
-#   residual-on-residual view               avPlots(fit); Frisch-Waugh
-#   is the bigger model worth it?           anova(small, big); adjusted R^2; AIC / BIC (SAME rows!)
+#   why does a coefficient change?          the added variable matters for y AND is related to x
+#   is the bigger model worth it?           anova(small, big); adjusted R^2 (SAME rows!)
 #   several dummies for one factor?         F-test of the factor: anova(small, big)
-#   which predictor is larger?              standardized coefficients (scale() every variable)
 #   are the predictors too alike?           vif(fit): worry above 5
 #   does the slope depend on the other?     interaction: x1 * x2
 #   the rows are not independent?           cluster-robust SE at the level where the predictor is constant
@@ -562,18 +428,16 @@ anova(fit_wm, fit_int)
 ## TRY IT YOURSELF
 # ====
 # 1. fix the missing New Zealand and South Africa milk prices. in the data,
-#    countries are spelled with a non-breaking space ("New Zealand"):
+#    countries are spelled with a non-breaking space ("New Zealand"):
 #    clean the country names in data-prep BEFORE the join with the milk table
-#    (gsub(" ", " ", country)), rerun it, and see whether the milk
+#    (gsub("\u00a0", " ", country)), rerun it, and see whether the milk
 #    coefficient (raw, log, clustered) changes with 42 more rows
-# 2. repeat the omitted variable bias table for the log-log model. does the
-#    formula still match to the last digit? (it is an algebraic identity)
-# 3. refit the two-predictor model separately for each urban class. does the
+# 2. refit the two-predictor model separately for each urban class. does the
 #    milk coefficient have the same sign in all three?
-# 4. drop the United States (572 rows) and refit the row-level log model. how
+# 3. drop the United States (572 rows) and refit the row-level log model. how
 #    much does the milk coefficient move? what does that say about "who counts"?
-# 5. add log(wage_eur)^2 to the log-log model with milk: does the elasticity of
+# 4. add log(wage_eur)^2 to the log-log model with milk: does the elasticity of
 #    the wage depend on the wage? compare with the squared term from 02
-# 6. plot the residuals of fit_wm against milk_eur. why do they show vertical
+# 5. plot the residuals of fit_wm against milk_eur. why do they show vertical
 #    stripes, and what does that say about the independence assumption?
 # ====

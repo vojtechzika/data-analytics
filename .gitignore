@@ -1,5 +1,6 @@
 course-materials/setup-guide/*
 !course-materials/setup-guide/*.pdf
+_no-sync/
 
 .DS_Store
 git.txt
